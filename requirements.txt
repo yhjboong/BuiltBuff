@@ -1,0 +1,5 @@
+Flask==2.1.0
+Flask-SQLAlchemy==2.5.1
+Werkzeug==2.1.0
+mysql-connector-python==8.0.29  # for MySQL support
+psycopg2==2.9.3                # for PostgreSQL support
