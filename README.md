@@ -1,4 +1,4 @@
 # BuiltBuff
 
 Members:
-Dan Yoo, Matthew Eleazar, Matheus Barrios, Macdonald Zharina
+Dan Yoo, Matthew Eleazar, Matheus de Andrade Barros, Macdonald Zharina
