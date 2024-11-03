@@ -11,6 +11,7 @@ app.secret_key = 'your_secret_key'
 db.init_app(app)
 @app.route('/')
 def home():
+    return render_template('home.html')
     return "Welcome to BuiltBuff!"
 
 @app.route('/signup', methods=['GET', 'POST'])

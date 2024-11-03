@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuiltBuff - Your Fitness Journey Starts Here</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1c20 0%, #2d3436 100%);
+            color: white;
+        }
+
+        .navbar {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00b894, #00cec9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .main-content {
+            display: flex;
+            min-height: calc(100vh - 70px);
+        }
+
+        .hero-section {
+            flex: 1;
+            padding: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero-heading {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-text {
+            font-size: 1.2rem;
+            color: #dfe6e9;
+            margin-bottom: 2rem;
+            max-width: 600px;
+        }
+
+        .features {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        .feature h3 {
+            color: #00b894;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00b894, #00cec9);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .hero-section {
+                padding: 2rem;
+            }
+
+            .features {
+                flex-direction: column;
+            }
+
+            .hero-heading {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">BuiltBuff</div>
+        <div class="nav-buttons">
+            <a href="{{ url_for('login') }}" class="btn btn-secondary">Log In</a>
+            <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <section class="hero-section">
+            <h1 class="hero-heading">Transform Your Fitness Journey with BuiltBuff</h1>
+            <p class="hero-text">
+                Track your workouts, monitor your progress, and achieve your fitness goals with our comprehensive workout tracking platform.
+            </p>
+
+            <div class="features">
+                <div class="feature">
+                    <h3>Track Progress</h3>
+                    <p>Log your workouts and monitor your improvement over time with detailed analytics.</p>
+                </div>
+                <div class="feature">
+                    <h3>Custom Workouts</h3>
+                    <p>Create and customize workout plans that fit your specific fitness goals.</p>
+                </div>
+                <div class="feature">
+                    <h3>Exercise Library</h3>
+                    <p>Access our extensive library of exercises with proper form guides.</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <a href="{{ url_for('signup') }}" class="btn btn-primary">Get Started</a>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary">Already have an account?</a>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
