@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width">
+    
+    <!-- Linking external styles and fonts -->
+    <!-- <link rel="stylesheet" href="./index.css" /> -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL+Monster+Beast:wght@400&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" />
+    
+    <title>Sign Up - BuiltBuff</title>
+</head>
+<body>
+    <!-- Centered container for the signup form -->
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #F0F0F0;">
+        <div style="max-width: 500px; width: 100%; padding: 20px; background: white; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25); border-radius: 20px;">
+            <h1 style="color: #FB892B; font-size: 48px; font-family: 'NCL Monster Beast'; text-align: center;">BuiltBuff</h1>
+            <h2 style="color: black; font-size: 28px; font-family: 'Roboto'; font-weight: 700; text-align: center;">Create a new account</h2>
+            <p style="color: #626262; font-size: 18px; font-family: 'Roboto'; text-align: center;">It’s quick and easy.</p>
+            
+            <!-- Signup form -->
+            <form action="/signup" method="POST">
+                
+                <!-- First and Last Name Fields -->
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" name="first_name" placeholder="First name" style="flex: 1; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #8F8D8D;" required>
+                    <input type="text" name="last_name" placeholder="Last name" style="flex: 1; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #8F8D8D;" required>
+                </div>
+
+                <!-- Birthday Fields -->
+                <label style="display: block; color: #636363; font-size: 16px; font-family: 'Roboto'; margin-bottom: 5px;">Birthday</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <select name="birth_month" style="flex: 1; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #8F8D8D;" required>
+                        <option value="">Month</option>
+                        <option value="Jan">Jan</option>
+                        <option value="Feb">Feb</option>
+                        <option value="Mar">Mar</option>
+                        <option value="Apr">Apr</option>
+                        <option value="May">May</option>
+                        <option value="Jun">Jun</option>
+                        <option value="Jul">Jul</option>
+                        <option value="Aug">Aug</option>
+                        <option value="Sep">Sep</option>
+                        <option value="Oct">Oct</option>
+                        <option value="Nov">Nov</option>
+                        <option value="Dec">Dec</option>
+                    </select>
+                    <input type="number" name="birth_day" placeholder="Day" min="1" max="31" style="flex: 1; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #8F8D8D;" required>
+                    <input type="number" name="birth_year" placeholder="Year" min="1900" max="2100" style="flex: 1; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #8F8D8D;" required>
+                </div>
+
+                <!-- Gender Fields -->
+                <label style="display: block; color: #636363; font-size: 16px; font-family: 'Roboto'; margin-bottom: 5px;">Gender</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <label style="flex: 1; display: flex; align-items: center;">
+                        <input type="radio" name="gender" value="male" required>
+                        <span style="margin-left: 5px; font-size: 16px; color: black;">Male</span>
+                    </label>
+                    <label style="flex: 1; display: flex; align-items: center;">
+                        <input type="radio" name="gender" value="female" required>
+                        <span style="margin-left: 5px; font-size: 16px; color: black;">Female</span>
+                    </label>
+                </div>
+
+                <!-- Email and Password Fields -->
+                <input type="email" name="email" placeholder="Email" style="width: 100%; padding: 10px; font-size: 16px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #8F8D8D;" required>
+                <input type="password" name="password" placeholder="New password" style="width: 100%; padding: 10px; font-size: 16px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #8F8D8D;" required>
+
+                <!-- Submit Button -->
+                <button type="submit" style="width: 100%; padding: 15px; font-size: 18px; background: #54AE4D; color: white; border: none; border-radius: 5px; font-weight: 700;">Sign Up</button>
+            </form>
+            
+            <p style="margin-top: 20px; color: #FB892B; font-size: 16px; text-align: center;">Already have an account? <a href="/login" style="color: #FB892B; text-decoration: underline;">Log in</a></p>
+        </div>
+    </div>
+</body>
+</html>
