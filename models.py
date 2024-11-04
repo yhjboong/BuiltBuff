@@ -86,6 +86,7 @@ class WorkoutLog(db.Model):
 
 
 
+
 def generate_recommendation(user_id):
     user = User.query.get(user_id)
     similar_users = User.query.filter(

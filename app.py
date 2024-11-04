@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, datetime
 from models import db, User, WorkoutLog, ExerciseList, generate_recommendation, WorkoutSession
 
+
+
 app = Flask(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -429,41 +431,55 @@ def end_session():
     return jsonify({"error": "Unauthorized"}), 401
 
 
+@app.route('/history/<int:user_id>', methods=['GET'])
+def history(user_id):
 
-@app.route('/history', methods=['GET'])
-def history():
-    if 'user_id' in session:
-        user_id = session['user_id']
-        completed_sessions = WorkoutSession.query.filter_by(user_id=user_id, status='completed').all()
+    sessions = WorkoutSession.query.filter_by(user_id=user_id).order_by(WorkoutSession.start_time.desc()).all()
+    
+    history_data = []
+    for session in sessions:
 
-        history_data = []
-        for session in completed_sessions:
-            workouts = WorkoutLog.query.filter_by(session_id=session.session_id, user_id=user_id).all()
-            workout_list = [
-                {
-                    "workout_id": workout.workout_id,
-                    "exercise_name": workout.exercise_name,
-                    "equipment": workout.equipment,
-                    "variation": workout.variation,
-                    "reps": workout.reps,
-                    "sets": workout.sets,
-                    "intensity_level": workout.intensity_level,
-                    "rest_time": workout.rest_time,
-                    "completed_at": workout.completed_at.strftime("%Y-%m-%d")
-                }
-                for workout in workouts
-            ]
-            history_data.append({
-                "session_id": session.session_id,
-                "session_name": session.session_name,
-                "start_time": session.start_time.strftime("%Y-%m-%d %H:%M"),
-                "end_time": session.end_time.strftime("%Y-%m-%d %H:%M"),
-                "total_duration": str(session.get_total_duration()),
-                "workouts": workout_list
+        workouts = WorkoutLog.query.filter_by(
+            session_id=session.session_id,
+            user_id=user_id
+        ).order_by(
+            WorkoutLog.completed_at,
+            WorkoutLog.exercise_name
+        ).all()
+        
+        if not workouts:
+            continue
+            
+        # Format each workout directly without grouping
+        workout_list = []
+        for workout in workouts:
+            workout_list.append({
+                "workout_id": workout.workout_id,
+                "exercise_name": workout.exercise_name,
+                "equipment": workout.equipment,
+                "variation": workout.variation,
+                "sets": workout.sets,
+                "reps": workout.reps,
+                "intensity_level": workout.intensity_level,
+                "rest_time": workout.rest_time,
+                "completed_at": workout.completed_at.strftime("%Y-%m-%d")
             })
+        
+        # Add session data
+        history_data.append({
+            "session_id": session.session_id,
+            "session_name": session.session_name,
+            "start_time": session.start_time.strftime("%Y-%m-%d %H:%M") if session.start_time else None,
+            "end_time": session.end_time.strftime("%Y-%m-%d %H:%M") if session.end_time else None,
+            "total_duration": str(session.get_total_duration()) if session.end_time else None,
+            "status": session.status,
+            "workouts": workout_list
+        })
+    
+    return jsonify(history_data), 200
 
-        return jsonify(history_data), 200
-    return jsonify({"error": "Unauthorized"}), 401
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

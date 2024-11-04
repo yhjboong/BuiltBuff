@@ -1,52 +1,84 @@
 import pandas as pd
-from models import db, ExerciseList
-from app import app  # Import app to get the app context
-from sqlalchemy.exc import IntegrityError  # Add this line
+from datetime import datetime
+from models import db, WorkoutSession, WorkoutLog
+from app import app
 
-def load_exercises_from_csv():
+def load_workout_sessions_from_csv():
     try:
-        # Load CSV file
-        df_exercises = pd.read_csv('./data/gym_exercise_dataset.csv')
+        # First, clear existing data
 
-        # **Data Cleaning Code (Place here):**
-        df_exercises['Exercise Name'] = df_exercises['Exercise Name'].str.strip().str.lower()
-        df_exercises['Equipment'] = df_exercises['Equipment'].str.strip().str.lower()
-        df_exercises['Variation'] = df_exercises['Variation'].astype(str).str.strip().str.lower()
-
-        # Check if required columns exist
-        required_columns = {'Exercise Name', 'Equipment', 'Variation', 'Preparation', 'Execution'}
-        if not required_columns.issubset(df_exercises.columns):
-            missing = required_columns - set(df_exercises.columns)
-            raise ValueError(f"CSV file is missing required columns: {', '.join(missing)}")
-
-        for _, row in df_exercises.iterrows():
-            description = f"Preparation: {row['Preparation']}\nExecution: {row['Execution']}"
-
-            # Check if the exercise already exists
-            existing_exercise = ExerciseList.query.filter_by(
-                name=row['Exercise Name'],
-                equipment=row['Equipment'],
-                variation=row['Variation']
-            ).first()
-
-            if existing_exercise:
-                print(f"Exercise '{row['Exercise Name']}' with equipment '{row['Equipment']}' and variation '{row['Variation']}' already exists. Skipping.")
-                continue
-
-            # Create new exercise entry
-            exercise = ExerciseList(
-                name=row['Exercise Name'],
-                equipment=row['Equipment'],
-                variation=row['Variation'],
-                description=description
-            )
-            db.session.add(exercise)
         db.session.commit()
-        print("Exercises loaded successfully.")
+
+        # Load CSV file
+        df = pd.read_csv('./data/matthew-eleazar-strong.csv')
+
+        # Standardize column names
+        df.rename(columns={
+            'Date': 'session_date',
+            'Workout Name': 'workout_name',
+            'Exercise Name': 'exercise_name',
+            'Set Order': 'set_order',
+            'Weight': 'weight',
+            'Reps': 'reps'
+        }, inplace=True)
+
+        # Convert date to datetime
+        df['session_date'] = pd.to_datetime(df['session_date'])
+
+        # Create a session ID for each unique date + workout name combination
+        df['session_key'] = df.groupby(['session_date', 'workout_name']).ngroup() + 1
+
+        # Create sessions first
+        unique_sessions = df[['session_date', 'workout_name', 'session_key']].drop_duplicates()
+        
+        # Store session mapping
+        session_mapping = {}
+        
+        for _, row in unique_sessions.iterrows():
+            workout_session = WorkoutSession(
+                user_id=1,
+                session_name=row['workout_name'],
+                start_time=row['session_date'],
+                status='completed'
+            )
+            db.session.add(workout_session)
+            db.session.flush()
+            session_mapping[row['session_key']] = workout_session.session_id
+
+        # Now create workout logs
+        for _, row in df.iterrows():
+            # Parse equipment and variation from exercise name
+            exercise_name = row['exercise_name']
+            equipment = ''
+            
+            if '(' in exercise_name:
+                base_name = exercise_name.split('(')[0].strip()
+                equipment = exercise_name.split('(')[1].replace(')', '').strip()
+                exercise_name = base_name
+
+            workout_log = WorkoutLog(
+                user_id=1,
+                session_id=session_mapping[row['session_key']],
+                session_workout_number=row['set_order'],
+                completed_at=row['session_date'].date(),
+                intensity_level='medium',
+                rest_time=0,
+                reps=row['reps'],
+                sets=row['set_order'],
+                exercise_name=exercise_name.lower(),
+                equipment=equipment.lower() if equipment else 'unknown',
+                variation='standard'
+            )
+            db.session.add(workout_log)
+
+        db.session.commit()
+        print("Workout sessions loaded successfully.")
     except Exception as e:
-        print(f"Error loading exercises: {e}")
+        db.session.rollback()
+        print(f"Error loading workout sessions: {e}")
+        raise e
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Ensure tables are created
-        load_exercises_from_csv()
+        db.create_all()
+        load_workout_sessions_from_csv()
