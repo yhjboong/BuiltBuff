@@ -17,7 +17,6 @@ with app.app_context():
 @app.route('/')
 def home():
     return render_template('home.html')
-    return "Welcome to BuiltBuff!"
 
 @app.route('/signup', methods=['POST'])
 def signup():
