@@ -1,64 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-  	<meta charset="utf-8">
-  	<meta name="viewport" content="initial-scale=1, width=device-width">
-  	
-  	<link rel="stylesheet"  href="./index.css" />
-  	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL Monster Beast:wght@400&display=swap" />
-  	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" />
-  	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto Mono:wght@400&display=swap" />
-  	
-  	
-  	
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL+Monster+Beast:wght@400&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap" />
+    <title>Exercises - BuiltBuff</title>
 </head>
 <body>
-  	
-<div style="width: 100%; height: 100%; padding-bottom: 57px; background: #F0F0F0; flex-direction: column; justify-content: flex-start; align-items: center; gap: 28px; display: inline-flex">
-    <div style="width: 1440px; height: 101px; position: relative">
-        <div style="width: 1440px; height: 101px; left: 0px; top: 0px; position: absolute; background: #312F2F"></div>
-        <img style="width: 79px; height: 79px; left: 37px; top: 11px; position: absolute" src='BuiltBuff/front_end/buffbuffalo.png' />
-            <div style="width: 587px; height: 78px; left: 426px; top: 12px; position: absolute">
-            <div style="width: 127px; height: 74px; left: 147px; top: 4px; position: absolute">
-                <div style="left: 0px; top: 57px; position: absolute; color: #BDBBBB; font-size: 12px; font-family: NCL Monster Beast; font-weight: 400; word-wrap: break-word">Start Workout</div>
-                <div style="width: 50px; height: 49.93px; left: 39px; top: 0px; position: absolute; background: #BDBBBB; border-radius: 2px"></div>
+    <div class="container">
+        <nav class="navbar">
+            <img class="navbar-logo" src="buffbuffalo.png" alt="BuiltBuff Logo">
+            <div class="nav-menu">
+                <a href="/profile" class="nav-item">
+                    <div class="nav-icon">
+                        <div class="nav-icon-inner"></div>
+                    </div>
+                    <span class="nav-label">Profile</span>
+                </a>
+                
+                <a href="/workout" class="nav-item">
+                    <div class="nav-icon">
+                        <div class="nav-icon-inner"></div>
+                    </div>
+                    <span class="nav-label">Start Workout</span>
+                </a>
+                
+                <a href="/history" class="nav-item">
+                    <div class="nav-icon">
+                        <div class="nav-icon-inner history-icon"></div>
+                        <div class="nav-icon-inner history-icon-bottom"></div>
+                    </div>
+                    <span class="nav-label">History</span>
+                </a>
+                
+                <a href="/exercises" class="nav-item active">
+                    <div class="nav-icon">
+                        <div class="nav-icon-inner"></div>
+                    </div>
+                    <span class="nav-label">Exercises</span>
+                </a>
             </div>
-            <div style="width: 65px; height: 74px; left: 357px; top: 4px; position: absolute">
-                <div style="width: 57px; height: 57px; left: 4px; top: 0px; position: absolute; flex-direction: column; justify-content: flex-start; align-items: flex-start; display: inline-flex">
-                    <div style="width: 42.75px; height: 47.50px; background: #BDBBBB"></div>
-                    <div style="width: 23.75px; height: 14.25px; background: #BDBBBB"></div>
-                </div>
-                <div style="left: 0px; top: 57px; position: absolute; color: #BDBBBB; font-size: 12px; font-family: NCL Monster Beast; font-weight: 400; word-wrap: break-word">History</div>
+        </nav>
+
+        <main class="content">
+            <div class="exercises-container">
+                <div class="exercises-card"></div>
             </div>
-            <div style="width: 82px; height: 69px; left: 505px; top: 9px; position: absolute">
-                <div style="left: 0px; top: 52px; position: absolute; color: #FB892B; font-size: 12px; font-family: NCL Monster Beast; font-weight: 400; word-wrap: break-word">Exercises</div>
-                <div style="width: 66px; height: 44px; left: 8px; top: 0px; position: absolute; background: #FB892B"></div>
-            </div>
-            <div style="width: 64px; height: 74px; left: 0px; top: 0px; position: absolute">
-                <div style="left: 0px; top: 57px; position: absolute; color: #BDBBBB; font-size: 12px; font-family: NCL Monster Beast; font-weight: 400; word-wrap: break-word">Profile</div>
-                <div style="width: 50px; height: 50px; left: 7px; top: 0px; position: absolute; flex-direction: column; justify-content: flex-start; align-items: flex-start; display: inline-flex">
-                    <div style="width: 37.50px; height: 39.58px; background: #BDBBBB"></div>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
-    <div style="width: 828px; height: 838px; background: white; box-shadow: 0px 4px 12.300000190734863px 4px rgba(0, 0, 0, 0.25); border-radius: 20px"></div>
-</div>
-  	
-  	
-  	
-  	<script>
-    		var groupContainer = document.getElementById("groupContainer");
-    		if(groupContainer) {
-      			groupContainer.addEventListener("click", function (e) {
-        				// Add your code here
-      			});
-    		}
-    		
-    		var groupContainer1 = document.getElementById("groupContainer1");
-    		if(groupContainer1) {
-      			groupContainer1.addEventListener("click", function (e) {
-        				// Add your code here
-      			});
-    		}</script></body>
+</body>
 </html>

@@ -1,254 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
-  	<meta charset="utf-8">
-  	<meta name="viewport" content="initial-scale=1, width=device-width">
-  	
-  	<link rel="stylesheet"  href="./index.css" />
-  	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL Monster Beast:wght@400&display=swap" />
-  	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" />
-  	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto Mono:wght@400&display=swap" />
-  	
-  	
-  	
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL+Monster+Beast:wght@400&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" />
+    <title>Record Workout - BuiltBuff</title>
 </head>
 <body>
-  	
-<div style="width: 100%; height: 100%; position: relative; background: #F0F0F0">
-    <div style="width: 743px; height: 982px; left: 354px; top: 150px; position: absolute">
-        <div style="width: 743px; height: 982px; left: 0px; top: 0px; position: absolute; background: white; box-shadow: 0px 4px 12.300000190734863px 4px rgba(0, 0, 0, 0.25); border-radius: 20px"></div>
-        <div style="left: 31px; top: 87px; position: absolute; color: #626262; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">0:12</div>
-        <div style="left: 31px; top: 28px; position: absolute; color: black; font-size: 40px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Chest, Triceps, Shoulders</div>
-        <div style="left: 31px; top: 123px; position: absolute; color: #8F8D8D; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Notes</div>
-    </div>
-    <div style="width: 140px; height: 45px; left: 928px; top: 178px; position: absolute">
-        <div style="width: 140px; height: 45px; left: 0px; top: 0px; position: absolute; background: #54AE4D; border-radius: 15px"></div>
-        <div style="left: 37px; top: 9px; position: absolute; color: white; font-size: 24px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Finish</div>
-    </div>
-    <div style="width: 743px; height: 259px; left: 354px; top: 325px; position: absolute">
-        <div style="width: 29px; height: 29px; left: 671px; top: 45px; position: absolute">
-            <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: black"></div>
-        </div>
-        <div style="left: 534px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Reps</div>
-        <div style="left: 151px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Previous</div>
-        <div style="left: 380px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">lbs</div>
-        <div style="left: 35px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Set</div>
-        <div style="width: 56px; height: 37px; left: 658px; top: 0px; position: absolute">
-            <div style="width: 56px; height: 37px; left: 0px; top: 0px; position: absolute; background: #FFE1C8; border-radius: 10px"></div>
-            <div style="width: 7px; height: 7px; left: 24px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-            <div style="width: 7px; height: 7px; left: 34px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-            <div style="width: 7px; height: 7px; left: 14px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-        </div>
-        <div style="left: 147px; top: 138px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">115 lb x 4</div>
-        <div style="left: 147px; top: 186px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">135 lb x 4</div>
-        <div style="width: 99px; height: 27px; left: 507px; top: 136px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 99px; height: 27px; left: 507px; top: 184px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 675px; height: 29px; left: 31px; top: 230px; position: absolute">
-            <div style="width: 675px; height: 29px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 291px; top: 3px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">+ Add Set</div>
-        </div>
-        <div style="left: 34px; top: 7px; position: absolute; color: #FB892B; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Bench Press (Barbell)</div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 136px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">2</div>
-        </div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 184px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">3</div>
-        </div>
-        <div style="width: 99px; height: 27px; left: 344px; top: 136px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 99px; height: 27px; left: 344px; top: 184px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 40px; height: 76px; left: 666px; top: 135px; position: absolute">
-            <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #E2E2E2; border-radius: 9px"></div>
-            <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #969393"></div>
+    <nav class="navbar">
+        <img class="navbar-logo" src="buffbuffalo.png" alt="BuiltBuff Logo">
+        <div class="nav-menu">
+            <div class="nav-item">
+                <div class="nav-icon profile-icon"></div>
+                <span class="nav-label">Profile</span>
             </div>
-            <div style="width: 40px; height: 29px; left: 0px; top: 47px; position: absolute">
-                <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #E2E2E2; border-radius: 9px"></div>
-                <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                    <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #969393"></div>
+            <div class="nav-item active">
+                <div class="nav-icon workout-icon"></div>
+                <span class="nav-label">Start Workout</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon history-icon"></div>
+                <span class="nav-label">History</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon exercises-icon"></div>
+                <span class="nav-label">Exercises</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="content">
+        <div class="workout-card">
+            <div class="workout-header">
+                <h1 class="workout-title">Chest, Triceps, Shoulders</h1>
+                <div class="timer">0:12</div>
+                <div class="notes">Notes</div>
+                <button class="btn btn-success finish-btn">Finish</button>
+            </div>
+
+            <div class="exercise-block">
+                <div class="exercise-header">
+                    <h2 class="exercise-name">Bench Press (Barbell)</h2>
+                    <div class="menu-dots">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                </div>
+
+                <div class="set-columns">
+                    <div class="column-headers">
+                        <span>Set</span>
+                        <span>Previous</span>
+                        <span>lbs</span>
+                        <span>Reps</span>
+                    </div>
+
+                    <div class="set-row completed">
+                        <div class="set-number">1</div>
+                        <div class="previous-weight">115 lb x 4</div>
+                        <input type="number" class="weight-input" value="135">
+                        <input type="number" class="reps-input" value="12">
+                        <button class="check-btn success"></button>
+                    </div>
+
+                    <!-- Additional set rows -->
+                    <button class="btn btn-add">+ Add Set</button>
                 </div>
             </div>
+            
+            <!-- Additional exercise blocks -->
         </div>
-        <div style="width: 743px; height: 39px; left: 0px; top: 81px; position: absolute; background: #CBFFC7"></div>
-        <div style="left: 147px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">115 lb x 4</div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 88px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">1</div>
-        </div>
-        <div style="left: 376px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">135</div>
-        <div style="left: 545px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">12</div>
-        <div style="width: 40px; height: 29px; left: 666px; top: 86px; position: absolute">
-            <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #54AE4D; border-radius: 9px"></div>
-            <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #FFF5F5"></div>
-            </div>
-        </div>
-    </div>
-    <div style="width: 743px; height: 259px; left: 354px; top: 875px; position: absolute">
-        <div style="width: 29px; height: 29px; left: 671px; top: 45px; position: absolute">
-            <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: black"></div>
-        </div>
-        <div style="left: 534px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Reps</div>
-        <div style="left: 151px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Previous</div>
-        <div style="left: 380px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">lbs</div>
-        <div style="left: 35px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Set</div>
-        <div style="width: 56px; height: 37px; left: 658px; top: 0px; position: absolute">
-            <div style="width: 56px; height: 37px; left: 0px; top: 0px; position: absolute; background: #FFE1C8; border-radius: 10px"></div>
-            <div style="width: 7px; height: 7px; left: 24px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-            <div style="width: 7px; height: 7px; left: 34px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-            <div style="width: 7px; height: 7px; left: 14px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-        </div>
-        <div style="left: 147px; top: 138px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">115 lb x 4</div>
-        <div style="left: 147px; top: 186px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">135 lb x 4</div>
-        <div style="width: 99px; height: 27px; left: 507px; top: 136px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 99px; height: 27px; left: 507px; top: 184px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 675px; height: 29px; left: 31px; top: 230px; position: absolute">
-            <div style="width: 675px; height: 29px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 291px; top: 3px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">+ Add Set</div>
-        </div>
-        <div style="left: 34px; top: 7px; position: absolute; color: #FB892B; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Military Press (Barbell)</div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 136px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">2</div>
-        </div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 184px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">3</div>
-        </div>
-        <div style="width: 99px; height: 27px; left: 344px; top: 136px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 99px; height: 27px; left: 344px; top: 184px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 40px; height: 76px; left: 666px; top: 135px; position: absolute">
-            <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #E2E2E2; border-radius: 9px"></div>
-            <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #969393"></div>
-            </div>
-            <div style="width: 40px; height: 29px; left: 0px; top: 47px; position: absolute">
-                <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #E2E2E2; border-radius: 9px"></div>
-                <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                    <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #969393"></div>
-                </div>
-            </div>
-        </div>
-        <div style="width: 743px; height: 39px; left: 0px; top: 81px; position: absolute; background: #CBFFC7"></div>
-        <div style="left: 147px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">115 lb x 4</div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 88px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">1</div>
-        </div>
-        <div style="left: 376px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">135</div>
-        <div style="left: 545px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">12</div>
-        <div style="width: 40px; height: 29px; left: 666px; top: 86px; position: absolute">
-            <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #54AE4D; border-radius: 9px"></div>
-            <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #FFF5F5"></div>
-            </div>
-        </div>
-    </div>
-    <div style="width: 743px; height: 259px; left: 354px; top: 600px; position: absolute">
-        <div style="width: 29px; height: 29px; left: 671px; top: 45px; position: absolute">
-            <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: black"></div>
-        </div>
-        <div style="left: 534px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Reps</div>
-        <div style="left: 151px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Previous</div>
-        <div style="left: 380px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">lbs</div>
-        <div style="left: 35px; top: 51px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Set</div>
-        <div style="width: 56px; height: 37px; left: 658px; top: 0px; position: absolute">
-            <div style="width: 56px; height: 37px; left: 0px; top: 0px; position: absolute; background: #FFE1C8; border-radius: 10px"></div>
-            <div style="width: 7px; height: 7px; left: 24px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-            <div style="width: 7px; height: 7px; left: 34px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-            <div style="width: 7px; height: 7px; left: 14px; top: 15px; position: absolute; background: #FB892B; border-radius: 9999px"></div>
-        </div>
-        <div style="left: 147px; top: 138px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">115 lb x 4</div>
-        <div style="left: 147px; top: 186px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">135 lb x 4</div>
-        <div style="width: 99px; height: 27px; left: 507px; top: 136px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 99px; height: 27px; left: 507px; top: 184px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 675px; height: 29px; left: 31px; top: 230px; position: absolute">
-            <div style="width: 675px; height: 29px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 291px; top: 3px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">+ Add Set</div>
-        </div>
-        <div style="left: 34px; top: 7px; position: absolute; color: #FB892B; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">Incline Bench Press (Dumbbell)</div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 136px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">2</div>
-        </div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 184px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">3</div>
-        </div>
-        <div style="width: 99px; height: 27px; left: 344px; top: 136px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 99px; height: 27px; left: 344px; top: 184px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-        <div style="width: 40px; height: 76px; left: 666px; top: 135px; position: absolute">
-            <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #E2E2E2; border-radius: 9px"></div>
-            <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #969393"></div>
-            </div>
-            <div style="width: 40px; height: 29px; left: 0px; top: 47px; position: absolute">
-                <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #E2E2E2; border-radius: 9px"></div>
-                <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                    <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #969393"></div>
-                </div>
-            </div>
-        </div>
-        <div style="width: 743px; height: 39px; left: 0px; top: 81px; position: absolute; background: #CBFFC7"></div>
-        <div style="left: 147px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">115 lb x 4</div>
-        <div style="width: 37px; height: 27px; left: 31px; top: 88px; position: absolute">
-            <div style="width: 37px; height: 27px; left: 0px; top: 0px; position: absolute; background: #D9D9D9; border-radius: 9px"></div>
-            <div style="left: 13px; top: 2px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">1</div>
-        </div>
-        <div style="left: 376px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">135</div>
-        <div style="left: 545px; top: 90px; position: absolute; color: black; font-size: 20px; font-family: Roboto; font-weight: 700; word-wrap: break-word">12</div>
-        <div style="width: 40px; height: 29px; left: 666px; top: 86px; position: absolute">
-            <div style="width: 40px; height: 27px; left: 0px; top: 2px; position: absolute; background: #54AE4D; border-radius: 9px"></div>
-            <div style="width: 29px; height: 29px; left: 5px; top: 0px; position: absolute">
-                <div style="width: 17.42px; height: 13.44px; left: 6.40px; top: 8.81px; position: absolute; background: #FFF5F5"></div>
-            </div>
-        </div>
-    </div>
-    <div style="width: 1440px; height: 101px; left: 0px; top: 0px; position: absolute">
-        <div style="width: 1440px; height: 101px; left: 0px; top: 0px; position: absolute; background: #312F2F"></div>
-        <img style="width: 79px; height: 79px; left: 37px; top: 11px; position: absolute" src="https://via.placeholder.com/79x79" />
-        <div style="width: 587px; height: 78px; left: 426px; top: 12px; position: absolute">
-            <div style="width: 127px; height: 74px; left: 147px; top: 4px; position: absolute">
-                <div style="left: 0px; top: 57px; position: absolute; color: #FB892B; font-size: 12px; font-family: NCL Monster Beast; font-weight: 400; word-wrap: break-word">Start Workout</div>
-                <div style="width: 50px; height: 49.93px; left: 39px; top: 0px; position: absolute; background: #FB892B; border-radius: 2px"></div>
-            </div>
-            <div style="width: 65px; height: 74px; left: 357px; top: 4px; position: absolute">
-                <div style="width: 57px; height: 57px; left: 4px; top: 0px; position: absolute; flex-direction: column; justify-content: flex-start; align-items: flex-start; display: inline-flex">
-                    <div style="width: 42.75px; height: 47.50px; background: #BDBBBB"></div>
-                    <div style="width: 23.75px; height: 14.25px; background: #BDBBBB"></div>
-                </div>
-                <div style="left: 0px; top: 57px; position: absolute; color: #BDBBBB; font-size: 12px; font-family: NCL Monster Beast; font-weight: 400; word-wrap: break-word">History</div>
-            </div>
-            <div style="width: 82px; height: 69px; left: 505px; top: 9px; position: absolute">
-                <div style="left: 0px; top: 52px; position: absolute; color: #BDBBBB; font-size: 12px; font-family: NCL Monster Beast; font-weight: 400; word-wrap: break-word">Exercises</div>
-                <div style="width: 66px; height: 44px; left: 8px; top: 0px; position: absolute; background: #BDBBBB"></div>
-            </div>
-            <div style="width: 64px; height: 74px; left: 0px; top: 0px; position: absolute">
-                <div style="left: 0px; top: 57px; position: absolute; color: #BDBBBB; font-size: 12px; font-family: NCL Monster Beast; font-weight: 400; word-wrap: break-word">Profile</div>
-                <div style="width: 50px; height: 50px; left: 7px; top: 0px; position: absolute; flex-direction: column; justify-content: flex-start; align-items: flex-start; display: inline-flex">
-                    <div style="width: 37.50px; height: 39.58px; background: #BDBBBB"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-  	
-  	
-  	
-  	
-  	<script>
-    		var groupContainer = document.getElementById("groupContainer");
-    		if(groupContainer) {
-      			groupContainer.addEventListener("click", function (e) {
-        				// Add your code here
-      			});
-    		}
-    		
-    		var groupContainer1 = document.getElementById("groupContainer1");
-    		if(groupContainer1) {
-      			groupContainer1.addEventListener("click", function (e) {
-        				// Add your code here
-      			});
-    		}</script></body>
+    </main>
+</body>
 </html>

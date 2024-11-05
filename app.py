@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, redirect, url_for, render_template, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, datetime
-from models import db, User, WorkoutLog, ExerciseList, generate_recommendation, WorkoutSession
+from models import db, User, WorkoutLog, ExerciseList, WorkoutSession
 
 app = Flask(__name__)
 
@@ -19,8 +19,9 @@ with app.app_context():
 def home():
     return render_template('home.html')
 
-@app.route('/signup', methods=['POST'])
+@app.route('/signup', methods=['POST', 'GET'])
 def signup():
+    # return render_template('signup.html')
     name = request.form['name']
     email = request.form['email']
     password = generate_password_hash(request.form['password'])
@@ -57,8 +58,9 @@ def signup():
     return jsonify({"message": "User created successfully!"}), 201
 
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['POST', 'GET'])
 def login():
+    # return render_template('login.html')
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -207,6 +209,7 @@ def delete_workout(session_id, workout_id):
 
 @app.route('/profile')
 def profile():
+    return render_template('profile.html')
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         
@@ -296,8 +299,9 @@ def view_session(session_id):
         }), 200
     return jsonify({"error": "Unauthorized"}), 401
 
-@app.route('/start_session', methods=['POST'])
+@app.route('/start_session', methods=['POST', 'GET'])
 def start_session():
+    # return render_template('startworkout.html')
     if 'user_id' in session:
         # Check if there is already an active session for this user
         active_session = WorkoutSession.query.filter_by(user_id=session['user_id'], status='active').first()
@@ -432,6 +436,7 @@ def end_session():
 
 @app.route('/history', methods=['GET'])
 def history():
+    # return render_template('history.html')
     if 'user_id' in session:
         user_id = session['user_id']
         completed_sessions = WorkoutSession.query.filter_by(user_id=user_id, status='completed').all()
