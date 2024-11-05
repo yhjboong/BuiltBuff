@@ -6,7 +6,7 @@ Dan Yoo, Matthew Eleazar, Matheus de Andrade Barros, Macdonald Zharina
 
 How to start:
 
-To download all necessary libraris, do:
+To download all necessary libraries, do:
 
 `pip install -r requirements.txt`
 or
