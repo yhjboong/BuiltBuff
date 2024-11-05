@@ -21,46 +21,51 @@ def home():
 
 @app.route('/signup', methods=['POST', 'GET'])
 def signup():
-    # return render_template('signup.html')
-    name = request.form['name']
-    email = request.form['email']
-    password = generate_password_hash(request.form['password'])
-    age = request.form['age']
-    weight = request.form['weight']
-    gender = request.form['gender']
-    
-    # Get height in feet and inches, then calculate total height in inches
-    height_foot = int(request.form.get('height_foot', 0))
-    height_inch = int(request.form.get('height_inch', 0))
-    total_height_in_inches = height_foot * 12 + height_inch
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = generate_password_hash(request.form['password'])
+        age = request.form['age']
+        weight = request.form['weight']
+        gender = request.form['gender']
+        
+        # Get height in feet and inches, then calculate total height in inches
+        height_foot = int(request.form.get('height_foot', 0))
+        height_inch = int(request.form.get('height_inch', 0))
+        total_height_in_inches = height_foot * 12 + height_inch
 
-    # Check if email already exists
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return jsonify({
-            "message": "User with this email already exists. Please log in.",
-            "login_url": url_for('login')
-        }), 400
-    
-    # Create a new user
-    new_user = User(
-        name=name, 
-        email=email, 
-        password=password,
-        age=age,
-        weight=weight,
-        gender=gender,
-        height=total_height_in_inches  # Store total height in inches
-    )
-    db.session.add(new_user)
-    db.session.commit()
-    
-    return jsonify({"message": "User created successfully!"}), 201
+        # Check if email already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({
+                "message": "User with this email already exists. Please log in.",
+                "login_url": url_for('login')
+            }), 400
+        
+        # Create a new user
+        new_user = User(
+            name=name, 
+            email=email, 
+            password=password,
+            age=age,
+            weight=weight,
+            gender=gender,
+            height=total_height_in_inches  # Store total height in inches
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Log the user in by setting the session
+        session['user_id'] = new_user.user_id
+        
+        # Redirect to the profile page
+        return redirect(url_for('profile'))
+    return render_template('signup.html')
+
 
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
-    # return render_template('login.html')
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -68,11 +73,10 @@ def login():
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.user_id
             print(f"User logged in with ID: {session['user_id']}")  # Debug line
-            # Return JSON response instead of redirecting to profile
             return jsonify({"message": "Login successful", "user_id": user.user_id}), 200
         return jsonify({"error": "Invalid credentials"}), 401
-    # If the method is GET, inform that the endpoint is POST-only for login
-    return jsonify({"error": "Please use POST to log in"}), 405
+    # Render the login template on GET request
+    return render_template('login.html')
 
 @app.route('/logout')
 def logout():
