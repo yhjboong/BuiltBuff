@@ -33,7 +33,6 @@ def signup():
         height_foot = int(request.form.get('height_foot', 0))
         height_inch = int(request.form.get('height_inch', 0))
         total_height_in_inches = height_foot * 12 + height_inch
-
         # Check if email already exists
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
@@ -61,7 +60,6 @@ def signup():
         # Redirect to the profile page
         return redirect(url_for('profile'))
     return render_template('signup.html')
-
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -136,7 +134,7 @@ def record_workout():
         # Determine the next workout number within this session
         next_workout_number = WorkoutLog.query.filter_by(session_id=session_id).count() + 1
 
-        # Create the new workout log entry
+        # Create the new workout log entry with weight data
         new_workout = WorkoutLog(
             user_id=session['user_id'],
             session_id=session_id,
@@ -148,7 +146,8 @@ def record_workout():
             sets=workout_data.get('sets'),
             exercise_name=exercise_name,
             equipment=equipment,
-            variation=variation
+            variation=variation,
+            weight=workout_data.get('weight')  # Adding weight field
         )
 
         # Add and commit the new workout to the database
@@ -210,13 +209,17 @@ def delete_workout(session_id, workout_id):
         return jsonify({"message": "Workout deleted successfully"}), 200
     return jsonify({"error": "Unauthorized"}), 401
 
-
 @app.route('/profile')
 def profile():
     return render_template('profile.html')
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         
+        # Convert height from inches to feet and inches
+        height_in_inches = user.height
+        height_feet = height_in_inches // 12
+        height_inches = height_in_inches % 12
+
         # Count the number of workout sessions for this user
         session_count = WorkoutSession.query.filter_by(user_id=user.user_id).count()
 
@@ -227,7 +230,8 @@ def profile():
                 "email": user.email,
                 "age": user.age,
                 "weight": user.weight,
-                "height_in_inches": user.height,  # Assuming height is stored in inches
+                "height_in_inches": user.height,  # Stored total height in inches
+                "height": f"{height_feet} ft {height_inches} in",  # Display in feet and inches
                 "gender": user.gender,
             },
             "workout_session_count": session_count
@@ -285,11 +289,17 @@ def view_session(session_id):
                     "exercise_name": log.exercise_name,
                     "equipment": log.equipment,
                     "variation": log.variation,
-                    "prescription": ExerciseList.query.filter_by(
-                        name=log.exercise_name,
-                        equipment=log.equipment,
-                        variation=log.variation
-                    ).first().description if log.exercise_name else "N/A"
+                    "prescription": (
+                        ExerciseList.query.filter_by(
+                            name=log.exercise_name,
+                            equipment=log.equipment,
+                            variation=log.variation
+                        ).first().description if ExerciseList.query.filter_by(
+                            name=log.exercise_name,
+                            equipment=log.equipment,
+                            variation=log.variation
+                        ).first() else "N/A"
+                    )
                 }
                 for log in workouts
             ]
@@ -303,7 +313,13 @@ def view_session(session_id):
         }), 200
     return jsonify({"error": "Unauthorized"}), 401
 
+<<<<<<< HEAD
 @app.route('/start_session', methods=['POST', 'GET'])
+=======
+
+
+@app.route('/start_session', methods=['POST'])
+>>>>>>> 5ef120c (added user_id = 1 data in history, refined history function, putted on database, refined database structure)
 def start_session():
     # return render_template('startworkout.html')
     if 'user_id' in session:
@@ -355,11 +371,17 @@ def view_current_session():
                     "exercise_name": workout.exercise_name,
                     "equipment": workout.equipment,
                     "variation": workout.variation,
-                    "prescription": ExerciseList.query.filter_by(
-                        name=workout.exercise_name, 
-                        equipment=workout.equipment, 
-                        variation=workout.variation
-                    ).first().description if workout.exercise_name else "N/A"
+                    "prescription": (
+                        ExerciseList.query.filter_by(
+                            name=workout.exercise_name, 
+                            equipment=workout.equipment, 
+                            variation=workout.variation
+                        ).first().description if ExerciseList.query.filter_by(
+                            name=workout.exercise_name, 
+                            equipment=workout.equipment, 
+                            variation=workout.variation
+                        ).first() else "N/A"
+                    )
                 }
                 for workout in workouts
             ]
@@ -371,6 +393,7 @@ def view_current_session():
             "workouts": workout_list
         }), 200
     return jsonify({"error": "Unauthorized"}), 401
+
 
 @app.route('/add_workout', methods=['POST'])
 def add_workout():
@@ -412,6 +435,7 @@ def add_workout():
         db.session.commit()
         return jsonify({"message": "Workout added to session successfully"}), 201
     return jsonify({"error": "Unauthorized"}), 401
+
 @app.route('/end_session', methods=['POST'])
 def end_session():
     if 'user_id' in session:
@@ -435,44 +459,60 @@ def end_session():
         }), 200
 
     return jsonify({"error": "Unauthorized"}), 401
-
-
-
 @app.route('/history', methods=['GET'])
 def history():
+<<<<<<< HEAD
     # return render_template('history.html')
     if 'user_id' in session:
+=======
+    if session.get('user_id'):  # Use session.get to safely check
+>>>>>>> 5ef120c (added user_id = 1 data in history, refined history function, putted on database, refined database structure)
         user_id = session['user_id']
-        completed_sessions = WorkoutSession.query.filter_by(user_id=user_id, status='completed').all()
+        sessions = WorkoutSession.query.filter_by(user_id=user_id).order_by(WorkoutSession.start_time.desc()).all()
 
         history_data = []
-        for session in completed_sessions:
-            workouts = WorkoutLog.query.filter_by(session_id=session.session_id, user_id=user_id).all()
+        for workout_session in sessions:
+            workouts = WorkoutLog.query.filter_by(
+                session_id=workout_session.session_id,
+                user_id=user_id
+            ).order_by(
+                WorkoutLog.completed_at,
+                WorkoutLog.exercise_name
+            ).all()
+            
+            if not workouts:
+                continue
+                
+            # Format each workout directly without grouping
             workout_list = [
                 {
                     "workout_id": workout.workout_id,
                     "exercise_name": workout.exercise_name,
                     "equipment": workout.equipment,
                     "variation": workout.variation,
-                    "reps": workout.reps,
                     "sets": workout.sets,
+                    "reps": workout.reps,
                     "intensity_level": workout.intensity_level,
                     "rest_time": workout.rest_time,
                     "completed_at": workout.completed_at.strftime("%Y-%m-%d")
                 }
                 for workout in workouts
             ]
+            
+            # Add session data
             history_data.append({
-                "session_id": session.session_id,
-                "session_name": session.session_name,
-                "start_time": session.start_time.strftime("%Y-%m-%d %H:%M"),
-                "end_time": session.end_time.strftime("%Y-%m-%d %H:%M"),
-                "total_duration": str(session.get_total_duration()),
+                "session_id": workout_session.session_id,
+                "session_name": workout_session.session_name,
+                "start_time": workout_session.start_time.strftime("%Y-%m-%d %H:%M") if workout_session.start_time else None,
+                "end_time": workout_session.end_time.strftime("%Y-%m-%d %H:%M") if workout_session.end_time else None,
+                "total_duration": str(workout_session.get_total_duration()) if workout_session.end_time else None,
+                "status": workout_session.status,
                 "workouts": workout_list
             })
-
+        
         return jsonify(history_data), 200
     return jsonify({"error": "Unauthorized"}), 401
+
 
 if __name__ == '__main__':
     app.run(debug=True)

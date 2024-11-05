@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from sqlalchemy.sql import func
 
 db = SQLAlchemy()
 
@@ -9,10 +10,10 @@ class User(db.Model):
     name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
-    age = db.Column(db.Integer, nullable=True)
-    weight = db.Column(db.Float, nullable=True)
-    height = db.Column(db.Integer, nullable=True)  # Stored in inches
-    gender = db.Column(db.String(10), nullable=True)
+    age = db.Column(db.Integer, nullable=False)
+    weight = db.Column(db.Float, nullable=False)
+    height = db.Column(db.Integer, nullable=False)
+    gender = db.Column(db.String(10), nullable=False)
     workout_sessions = db.relationship('WorkoutSession', backref='user', lazy=True)
 
 class ExerciseList(db.Model):
@@ -44,6 +45,7 @@ class WorkoutLog(db.Model):
     workout_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     session_id = db.Column(db.Integer, db.ForeignKey('workout_sessions.session_id'), nullable=False)
+    session_workout_number = db.Column(db.Integer)  # New field for tracking workout number in the session
     completed_at = db.Column(db.Date)
     intensity_level = db.Column(db.String(10))
     rest_time = db.Column(db.Integer)
@@ -52,6 +54,8 @@ class WorkoutLog(db.Model):
     exercise_name = db.Column(db.String(100))
     equipment = db.Column(db.String(100))
     variation = db.Column(db.String(100))
+    weight = db.Column(db.Float)  # Weight used in each exercise
+
 
 class WorkoutHistory(db.Model):
     __tablename__ = 'workout_history'
@@ -66,3 +70,23 @@ class WorkoutHistory(db.Model):
     # Relationships
     user = db.relationship("User", backref="workout_history")
     session = db.relationship("WorkoutSession", backref="workout_history")
+
+def update_workout_history(session_id):
+    session = WorkoutSession.query.get(session_id)
+    if session:
+        total_exercises = WorkoutLog.query.filter_by(session_id=session_id).count()
+        
+        avg_intensity = db.session.query(
+            func.avg(
+                func.coalesce(intensity_mapping[WorkoutLog.intensity_level], 2)
+            )
+        ).filter_by(session_id=session_id).scalar()
+        
+        history_entry = WorkoutHistory.query.filter_by(session_id=session_id).first()
+        if not history_entry:
+            history_entry = WorkoutHistory(session_id=session_id, user_id=session.user_id)
+            db.session.add(history_entry)
+        
+        history_entry.total_exercises = total_exercises
+        history_entry.intensity_avg = avg_intensity
+        db.session.commit()
