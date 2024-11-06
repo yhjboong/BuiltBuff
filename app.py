@@ -453,14 +453,10 @@ def end_session():
         }), 200
 
     return jsonify({"error": "Unauthorized"}), 401
+
 @app.route('/history', methods=['GET'])
 def history():
-<<<<<<< HEAD
-    # return render_template('history.html')
-    if 'user_id' in session:
-=======
     if session.get('user_id'):  # Use session.get to safely check
->>>>>>> 5ef120c (added user_id = 1 data in history, refined history function, putted on database, refined database structure)
         user_id = session['user_id']
         sessions = WorkoutSession.query.filter_by(user_id=user_id).order_by(WorkoutSession.start_time.desc()).all()
 
