@@ -313,13 +313,7 @@ def view_session(session_id):
         }), 200
     return jsonify({"error": "Unauthorized"}), 401
 
-<<<<<<< HEAD
 @app.route('/start_session', methods=['POST', 'GET'])
-=======
-
-
-@app.route('/start_session', methods=['POST'])
->>>>>>> 5ef120c (added user_id = 1 data in history, refined history function, putted on database, refined database structure)
 def start_session():
     # return render_template('startworkout.html')
     if 'user_id' in session:
