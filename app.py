@@ -211,7 +211,6 @@ def delete_workout(session_id, workout_id):
 
 @app.route('/profile')
 def profile():
-    return render_template('profile.html')
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         
@@ -223,21 +222,26 @@ def profile():
         # Count the number of workout sessions for this user
         session_count = WorkoutSession.query.filter_by(user_id=user.user_id).count()
 
-        # Format the user data and the session count in a JSON response
-        user_data = {
-            "profile": {
-                "name": user.name,
-                "email": user.email,
-                "age": user.age,
-                "weight": user.weight,
-                "height_in_inches": user.height,  # Stored total height in inches
-                "height": f"{height_feet} ft {height_inches} in",  # Display in feet and inches
-                "gender": user.gender,
-            },
-            "workout_session_count": session_count
-        }
+        # Check if the request wants JSON
+        if request.headers.get('Accept') == 'application/json':
+            # Format the user data and the session count in a JSON response
+            user_data = {
+                "profile": {
+                    "name": user.name,
+                    "email": user.email,
+                    "age": user.age,
+                    "weight": user.weight,
+                    "height_in_inches": user.height,  # Stored total height in inches
+                    "height": f"{height_feet} ft {height_inches} in",  # Display in feet and inches
+                    "gender": user.gender,
+                },
+                "workout_session_count": session_count
+            }
+            return jsonify(user_data), 200
         
-        return jsonify(user_data), 200
+        # Return the template for regular requests
+        return render_template('profile.html')
+        
     return jsonify({"error": "Unauthorized"}), 401
 
 @app.route('/view_workout/<int:session_id>/<int:workout_id>', methods=['GET'])
@@ -313,7 +317,9 @@ def view_session(session_id):
         }), 200
     return jsonify({"error": "Unauthorized"}), 401
 
-@app.route('/start_session', methods=['POST', 'GET'])
+
+
+@app.route('/start_session', methods=['POST'])
 def start_session():
     # return render_template('startworkout.html')
     if 'user_id' in session:
@@ -456,52 +462,68 @@ def end_session():
 
 @app.route('/history', methods=['GET'])
 def history():
-    if session.get('user_id'):  # Use session.get to safely check
-        user_id = session['user_id']
-        sessions = WorkoutSession.query.filter_by(user_id=user_id).order_by(WorkoutSession.start_time.desc()).all()
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
 
-        history_data = []
-        for workout_session in sessions:
-            workouts = WorkoutLog.query.filter_by(
-                session_id=workout_session.session_id,
-                user_id=user_id
-            ).order_by(
-                WorkoutLog.completed_at,
-                WorkoutLog.exercise_name
-            ).all()
-            
-            if not workouts:
-                continue
-                
-            # Format each workout directly without grouping
-            workout_list = [
-                {
-                    "workout_id": workout.workout_id,
-                    "exercise_name": workout.exercise_name,
-                    "equipment": workout.equipment,
-                    "variation": workout.variation,
-                    "sets": workout.sets,
-                    "reps": workout.reps,
-                    "intensity_level": workout.intensity_level,
-                    "rest_time": workout.rest_time,
-                    "completed_at": workout.completed_at.strftime("%Y-%m-%d")
-                }
-                for workout in workouts
-            ]
-            
-            # Add session data
-            history_data.append({
-                "session_id": workout_session.session_id,
-                "session_name": workout_session.session_name,
-                "start_time": workout_session.start_time.strftime("%Y-%m-%d %H:%M") if workout_session.start_time else None,
-                "end_time": workout_session.end_time.strftime("%Y-%m-%d %H:%M") if workout_session.end_time else None,
-                "total_duration": str(workout_session.get_total_duration()) if workout_session.end_time else None,
-                "status": workout_session.status,
-                "workouts": workout_list
-            })
+    user_id = session['user_id']
+    sessions = WorkoutSession.query.filter_by(user_id=user_id).order_by(WorkoutSession.start_time.desc()).all()
+
+    # Prepare the history data
+    history_data = []
+    for workout_session in sessions:
+        workouts = WorkoutLog.query.filter_by(
+            session_id=workout_session.session_id,
+            user_id=user_id
+        ).order_by(
+            WorkoutLog.completed_at,
+            WorkoutLog.exercise_name
+        ).all()
         
+        if not workouts:
+            continue
+
+            
+        # Format dates for display
+        start_time = workout_session.start_time
+        formatted_date = {
+            'month_year': start_time.strftime("%B %Y"),
+            'day_name': start_time.strftime("%A"),
+            'short_date': start_time.strftime("%b %d"),
+            'full_date': start_time.strftime("%Y-%m-%d %H:%M")
+        }
+            
+        workout_list = [
+            {
+                "workout_id": workout.workout_id,
+                "exercise_name": workout.exercise_name,
+                "equipment": workout.equipment,
+                "variation": workout.variation,
+                "sets": workout.sets,
+                "reps": workout.reps,
+                "intensity_level": workout.intensity_level,
+                "rest_time": workout.rest_time,
+                "completed_at": workout.completed_at.strftime("%Y-%m-%d")
+            }
+            for workout in workouts
+        ]
+        
+        history_data.append({
+            "session_id": workout_session.session_id,
+            "session_name": workout_session.session_name,
+            "formatted_date": formatted_date,
+            "start_time": start_time.strftime("%Y-%m-%d %H:%M") if start_time else None,
+            "end_time": workout_session.end_time.strftime("%Y-%m-%d %H:%M") if workout_session.end_time else None,
+            "total_duration": str(workout_session.get_total_duration()) if workout_session.end_time else None,
+            "status": workout_session.status,
+            "workouts": workout_list
+        })
+
+    # If the request wants JSON, return JSON response
+    if request.headers.get('Accept') == 'application/json':
         return jsonify(history_data), 200
-    return jsonify({"error": "Unauthorized"}), 401
+    
+    # Otherwise return the rendered template with the data
+    return render_template('history.html', workout_sessions=history_data)
 
 
 if __name__ == '__main__':
