@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, redirect, url_for, render_template, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date, datetime
+from datetime import date, datetime, timezone 
 from models import db, User, WorkoutLog, ExerciseList, WorkoutSession
 
 app = Flask(__name__)
@@ -112,14 +112,21 @@ def search_exercises():
 def record_workout():
     if 'user_id' in session:
         workout_data = request.get_json()
+        print("Received workout data:", workout_data)  # Debug log
+        
         session_id = workout_data.get('session_id')
-
-        # Check if session_id is provided and if it's an active session for the user
         if not session_id:
+            print("No session_id provided")  # Debug log
             return jsonify({"error": "session_id is required"}), 400
 
-        workout_session = WorkoutSession.query.filter_by(session_id=session_id, user_id=session['user_id'], status='active').first()
+        workout_session = WorkoutSession.query.filter_by(
+            session_id=session_id, 
+            user_id=session['user_id'], 
+            status='active'
+        ).first()
+        
         if not workout_session:
+            print(f"No active session found for session_id: {session_id}")  # Debug log
             return jsonify({"error": "No active workout session found with the provided session_id"}), 404
 
         # Verify exercise details
@@ -127,14 +134,24 @@ def record_workout():
         equipment = workout_data.get('equipment', '').strip().lower()
         variation = workout_data.get('variation', '').strip().lower()
 
-        valid_exercise = ExerciseList.query.filter_by(name=exercise_name, equipment=equipment, variation=variation).first()
+        print(f"Looking up exercise: {exercise_name}, {equipment}, {variation}")  # Debug log
+        
+        valid_exercise = ExerciseList.query.filter_by(
+            name=exercise_name, 
+            equipment=equipment, 
+            variation=variation
+        ).first()
+        
         if not valid_exercise:
-            return jsonify({"error": "Invalid exercise name, equipment, or variation. Please choose a valid exercise."}), 400
+            print(f"Invalid exercise: {exercise_name}, {equipment}, {variation}")  # Debug log
+            return jsonify({
+                "error": "Invalid exercise name, equipment, or variation. Please choose a valid exercise."
+            }), 400
 
         # Determine the next workout number within this session
         next_workout_number = WorkoutLog.query.filter_by(session_id=session_id).count() + 1
 
-        # Create the new workout log entry with weight data
+        # Create the new workout log entry
         new_workout = WorkoutLog(
             user_id=session['user_id'],
             session_id=session_id,
@@ -147,45 +164,79 @@ def record_workout():
             exercise_name=exercise_name,
             equipment=equipment,
             variation=variation,
-            weight=workout_data.get('weight')  # Adding weight field
+            weight=workout_data.get('weight')
         )
 
-        # Add and commit the new workout to the database
-        db.session.add(new_workout)
-        db.session.commit()
-        return jsonify({"message": "Workout recorded successfully"}), 201
+        try:
+            db.session.add(new_workout)
+            db.session.commit()
+            print(f"Successfully recorded workout: {new_workout.workout_id}")  # Debug log
+            return jsonify({"message": "Workout recorded successfully"}), 201
+        except Exception as e:
+            print(f"Error recording workout: {str(e)}")  # Debug log
+            db.session.rollback()
+            return jsonify({"error": f"Failed to record workout: {str(e)}"}), 500
+            
     return jsonify({"error": "Unauthorized"}), 401
+
 
 @app.route('/update_workout/<int:session_id>/<int:workout_id>', methods=['POST'])
 def update_workout(session_id, workout_id):
     if 'user_id' in session:
-        workout = WorkoutLog.query.filter_by(session_id=session_id, workout_id=workout_id, user_id=session['user_id']).first()
-        if not workout:
-            return jsonify({"error": "Workout not found in this session"}), 404
+        try:
+            # Get JSON data from request
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
 
-        # Get JSON data from request
-        data = request.get_json()
+            # Get the workout
+            workout = WorkoutLog.query.filter_by(
+                session_id=session_id,
+                workout_id=workout_id,
+                user_id=session['user_id']
+            ).first()
 
-        # Validate the new exercise details against ExerciseList
-        exercise_name = data.get('exercise_name', '').strip().lower()
-        equipment = data.get('equipment', '').strip().lower()
-        variation = data.get('variation', '').strip().lower()
-        
-        valid_exercise = ExerciseList.query.filter_by(name=exercise_name, equipment=equipment, variation=variation).first()
-        if not valid_exercise:
-            return jsonify({"error": "Invalid exercise name, equipment, or variation. Please choose a valid exercise."}), 400
+            if not workout:
+                return jsonify({"error": "Workout not found"}), 404
 
-        # Update workout fields if valid
-        workout.intensity_level = data.get('intensity_level', workout.intensity_level)
-        workout.rest_time = data.get('rest_time', workout.rest_time)
-        workout.reps = data.get('reps', workout.reps)
-        workout.sets = data.get('sets')
-        workout.exercise_name = exercise_name
-        workout.equipment = equipment
-        workout.variation = variation
+            # Validate required fields
+            if 'sets' not in data or 'reps' not in data:
+                return jsonify({"error": "Sets and reps are required"}), 400
 
-        db.session.commit()
-        return jsonify({"message": "Workout updated successfully"}), 200
+            # Convert sets and reps to integers
+            try:
+                workout.sets = int(data['sets'])
+                workout.reps = int(data['reps'])
+                workout.intensity_level = data.get('intensity_level', workout.intensity_level)
+                
+                # Keep existing values for these fields
+                workout.exercise_name = workout.exercise_name
+                workout.equipment = workout.equipment
+                workout.variation = workout.variation
+                
+                db.session.commit()
+
+                return jsonify({
+                    "message": "Workout updated successfully",
+                    "workout": {
+                        "workout_id": workout.workout_id,
+                        "sets": workout.sets,
+                        "reps": workout.reps,
+                        "intensity_level": workout.intensity_level,
+                        "exercise_name": workout.exercise_name
+                    }
+                }), 200
+
+            except ValueError:
+                return jsonify({"error": "Sets and reps must be numbers"}), 400
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error updating workout: {str(e)}")  # For debugging
+                return jsonify({"error": str(e)}), 500
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
     return jsonify({"error": "Unauthorized"}), 401
 
 
@@ -247,23 +298,26 @@ def profile():
 @app.route('/view_workout/<int:session_id>/<int:workout_id>', methods=['GET'])
 def view_workout(session_id, workout_id):
     if 'user_id' in session:
-        workout = WorkoutLog.query.filter_by(session_id=session_id, workout_id=workout_id, user_id=session['user_id']).first()
+        workout = WorkoutLog.query.filter_by(
+            session_id=session_id,
+            workout_id=workout_id,
+            user_id=session['user_id']
+        ).first()
+
         if not workout:
-            return jsonify({"error": "Workout not found in this session"}), 404
-        
-        workout_data = {
+            return jsonify({"error": "Workout not found"}), 404
+
+        return jsonify({
             "workout_id": workout.workout_id,
-            "session_workout_number": workout.session_workout_number,
-            "date": workout.completed_at.strftime("%Y-%m-%d"),
-            "intensity_level": workout.intensity_level,
-            "rest_time": workout.rest_time,
-            "reps": workout.reps,
             "sets": workout.sets,
+            "reps": workout.reps,
+            "intensity_level": workout.intensity_level,
             "exercise_name": workout.exercise_name,
             "equipment": workout.equipment,
-            "variation": workout.variation
-        }
-        return jsonify(workout_data), 200
+            "variation": workout.variation,
+            "rest_time": workout.rest_time
+        }), 200
+
     return jsonify({"error": "Unauthorized"}), 401
 
 @app.route('/view_session/<int:session_id>', methods=['GET'])
@@ -318,31 +372,35 @@ def view_session(session_id):
     return jsonify({"error": "Unauthorized"}), 401
 
 
-
-@app.route('/start_session', methods=['POST'])
+@app.route('/start_session', methods=['POST', 'GET'])
 def start_session():
-    # return render_template('startworkout.html')
-    if 'user_id' in session:
-        # Check if there is already an active session for this user
-        active_session = WorkoutSession.query.filter_by(user_id=session['user_id'], status='active').first()
-        if active_session:
-            return jsonify({
-                "message": "You already have an active session.",
-                "session_id": active_session.session_id
-            }), 400
-
-        data = request.get_json()
-        session_name = data.get('session_name', 'Workout Session')
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
         
-        new_session = WorkoutSession(user_id=session['user_id'], session_name=session_name)
-        db.session.add(new_session)
-        db.session.commit()
+    if request.method == 'GET':
+        # Render the workout interface
+        return render_template('startworkout.html')
         
+    # Handle POST request (existing code)
+    # Check if there is already an active session for this user
+    active_session = WorkoutSession.query.filter_by(user_id=session['user_id'], status='active').first()
+    if active_session:
         return jsonify({
-            "message": "Workout session started successfully",
-            "session_id": new_session.session_id
-        }), 201
-    return jsonify({"error": "Unauthorized"}), 401
+            "message": "You already have an active session.",
+            "session_id": active_session.session_id
+        }), 400
+
+    data = request.get_json()
+    session_name = data.get('session_name', 'Workout Session')
+    
+    new_session = WorkoutSession(user_id=session['user_id'], session_name=session_name)
+    db.session.add(new_session)
+    db.session.commit()
+    
+    return jsonify({
+        "message": "Workout session started successfully",
+        "session_id": new_session.session_id
+    }), 201
 
 @app.route('/view_current_session', methods=['GET'])
 def view_current_session():
@@ -433,8 +491,11 @@ def add_workout():
         )
         db.session.add(new_workout)
         db.session.commit()
+        
         return jsonify({"message": "Workout added to session successfully"}), 201
     return jsonify({"error": "Unauthorized"}), 401
+
+
 
 @app.route('/end_session', methods=['POST'])
 def end_session():
@@ -447,8 +508,8 @@ def end_session():
         if not active_session:
             return jsonify({"error": "No active session found"}), 404
 
-        # Set end_time and mark as completed
-        active_session.end_time = datetime.utcnow()
+        # Use datetime.now(timezone.utc) instead of datetime.utcnow()
+        active_session.end_time = datetime.now(timezone.utc)
         active_session.status = 'completed'
         db.session.commit()
 
@@ -458,6 +519,7 @@ def end_session():
             "total_duration": str(active_session.get_total_duration())
         }), 200
 
+    return jsonify({"error": "Unauthorized"}), 401
     return jsonify({"error": "Unauthorized"}), 401
 @app.route('/history', methods=['GET'])
 def history():
@@ -478,9 +540,6 @@ def history():
             WorkoutLog.exercise_name
         ).all()
         
-        if not workouts:
-            continue
-            
         # Format dates for display
         start_time = workout_session.start_time
         formatted_date = {
@@ -503,7 +562,7 @@ def history():
                 "completed_at": workout.completed_at.strftime("%Y-%m-%d")
             }
             for workout in workouts
-        ]
+        ] if workouts else []  # Return empty list instead of skipping
         
         history_data.append({
             "session_id": workout_session.session_id,
@@ -516,6 +575,9 @@ def history():
             "workouts": workout_list
         })
 
+    # Add debug logging
+  # This will help debug in console
+    
     # If the request wants JSON, return JSON response
     if request.headers.get('Accept') == 'application/json':
         return jsonify(history_data), 200

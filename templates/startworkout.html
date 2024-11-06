@@ -4,57 +4,347 @@
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1, width=device-width">
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL+Monster+Beast:wght@400&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
     <title>Workout - BuiltBuff</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 <body>
     <nav class="navbar">
-        <!-- Same navbar as above -->
+        <img src="{{ url_for('static', filename='buffbuffalo.png') }}" alt="BuiltBuff Logo" class="navbar-logo">
+        <div class="navbar-content">
+            <div class="nav-item active">
+                <div class="nav-icon"></div>
+                <span class="nav-label">Workout</span>
+            </div>
+        </div>
     </nav>
 
     <main class="main-content">
-        <div class="workout-container">
-            <div class="workout-header">
-                <h1 class="heading-primary">Chest, Triceps, Shoulders</h1>
-                <span class="workout-timer">0:12</span>
-                <button class="btn btn-primary finish-btn">Finish</button>
-            </div>
-
-            <div class="exercise-blocks">
-                <div class="exercise-block">
-                    <div class="exercise-header">
-                        <h3 class="exercise-name">Bench Press (Barbell)</h3>
-                        <div class="menu-dots">
-                            <span class="dot"></span>
-                            <span class="dot"></span>
-                            <span class="dot"></span>
-                        </div>
-                    </div>
-
-                    <div class="set-grid">
-                        <div class="set-header">
-                            <span>Set</span>
-                            <span>Previous</span>
-                            <span>lbs</span>
-                            <span>Reps</span>
-                        </div>
-
-                        <div class="set-row status-success">
-                            <span class="set-number">1</span>
-                            <span class="previous-weight">115 lb x 4</span>
-                            <span class="current-weight">135</span>
-                            <span class="reps">12</span>
-                            <button class="btn-check"></button>
-                        </div>
-                        <!-- Additional set rows -->
-                    </div>
-
-                    <button class="btn btn-add">+ Add Set</button>
+        <div id="session-start-view">
+            <div class="workout-container">
+                <div class="workout-header">
+                    <input type="text" id="session-name" placeholder="Enter Workout Name" class="workout-name-input">
+                    <button onclick="startSession()" class="btn btn-primary">Start Workout</button>
                 </div>
-                <!-- Additional exercise blocks -->
+            </div>
+        </div>
+
+        <div id="active-workout-view" style="display: none;">
+            <div class="workout-container">
+                <div class="workout-header">
+                    <h1 class="heading-primary" id="workout-title"></h1>
+                    <span class="workout-timer" id="workout-timer">00:00:00</span>
+                    <button class="btn btn-primary finish-btn" onclick="endSession()">Finish</button>
+                </div>
+
+                <div class="exercise-blocks" id="exercise-blocks"></div>
+
+                <div class="add-exercise-section">
+                    <div class="search-container">
+                        <input type="text" 
+                               id="exercise-search" 
+                               placeholder="Search exercises to add..." 
+                               class="exercise-search-input"
+                               oninput="searchExercises()">
+                        <div id="exercise-suggestions" class="suggestions-dropdown"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
+
+    <script>
+        let currentSessionId = null;
+        let startTime = null;
+        let timerInterval = null;
+        let exerciseData = new Map();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            recoverSession();
+            console.log('Page loaded, checking for existing session...');
+        });
+
+        function recoverSession() {
+            const savedSession = localStorage.getItem('currentSession');
+            if (savedSession) {
+                console.log('Found saved session:', savedSession);
+                const session = JSON.parse(savedSession);
+                currentSessionId = session.id;
+                document.getElementById('session-start-view').style.display = 'none';
+                document.getElementById('active-workout-view').style.display = 'block';
+                document.getElementById('workout-title').textContent = session.name;
+                startTime = new Date(session.startTime);
+                timerInterval = setInterval(updateTimer, 1000);
+                
+                const savedExercises = localStorage.getItem('currentExercises');
+                if (savedExercises) {
+                    console.log('Recovering exercises:', savedExercises);
+                    const exercises = JSON.parse(savedExercises);
+                    exercises.forEach(exercise => {
+                        addExerciseBlock(exercise, true);
+                    });
+                }
+            }
+        }
+
+        function startSession() {
+            const sessionName = document.getElementById('session-name').value;
+            if (!sessionName) {
+                alert('Please enter a workout name');
+                return;
+            }
+
+            console.log('Starting new session:', sessionName);
+
+            fetch('/start_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_name: sessionName })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to start session');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Session started successfully:', data);
+                if (data.session_id) {
+                    currentSessionId = data.session_id;
+                    document.getElementById('session-start-view').style.display = 'none';
+                    document.getElementById('active-workout-view').style.display = 'block';
+                    document.getElementById('workout-title').textContent = sessionName;
+                    startTime = new Date();
+                    timerInterval = setInterval(updateTimer, 1000);
+                    
+                    localStorage.setItem('currentSession', JSON.stringify({
+                        id: currentSessionId,
+                        name: sessionName,
+                        startTime: startTime
+                    }));
+                }
+            })
+            .catch(error => {
+                console.error('Error starting session:', error);
+                alert('Failed to start session: ' + error.message);
+            });
+        }
+
+        let searchTimeout;
+        function searchExercises() {
+            clearTimeout(searchTimeout);
+            const searchTerm = document.getElementById('exercise-search').value;
+            
+            searchTimeout = setTimeout(() => {
+                console.log('Searching exercises:', searchTerm);
+                
+                if (searchTerm.length < 2) {
+                    document.getElementById('exercise-suggestions').style.display = 'none';
+                    return;
+                }
+
+                fetch(`/search_exercises?exercise_name=${encodeURIComponent(searchTerm)}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Failed to search exercises');
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Search results:', data);
+                        const suggestions = document.getElementById('exercise-suggestions');
+                        suggestions.innerHTML = '';
+                        
+                        data.results.forEach(exercise => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.textContent = `${exercise.exercise_name} (${exercise.equipment})`;
+                            div.onclick = () => addExerciseBlock(exercise);
+                            suggestions.appendChild(div);
+                        });
+                        
+                        suggestions.style.display = data.results.length ? 'block' : 'none';
+                    })
+                    .catch(error => {
+                        console.error('Error searching exercises:', error);
+                        alert('Failed to search exercises: ' + error.message);
+                    });
+            }, 300);
+        }
+
+        function addExerciseBlock(exercise, isRecovery = false) {
+            console.log('Adding exercise block:', exercise);
+            const exerciseBlocks = document.getElementById('exercise-blocks');
+            const exerciseId = `exercise-${Date.now()}`;
+            
+            exerciseData.set(exerciseId, {
+                name: exercise.exercise_name,
+                equipment: exercise.equipment,
+                variation: exercise.variation || 'standard'
+            });
+
+            const newBlock = document.createElement('div');
+            newBlock.className = 'exercise-block';
+            newBlock.id = exerciseId;
+            newBlock.innerHTML = `
+                <div class="exercise-header">
+                    <h3 class="exercise-name">${exercise.exercise_name} (${exercise.equipment})</h3>
+                    <button class="delete-exercise" onclick="deleteExerciseBlock('${exerciseId}')">×</button>
+                </div>
+                <div class="set-grid">
+                    <div class="set-header">
+                        <span>Set</span>
+                        <span>Weight (lbs)</span>
+                        <span>Reps</span>
+                        <span>Actions</span>
+                    </div>
+                    <div class="set-row" data-set="1">
+                        <span class="set-number">1</span>
+                        <input type="number" class="weight-input" placeholder="0">
+                        <input type="number" class="reps-input" placeholder="0">
+                        <button class="record-set-btn" onclick="recordSet('${exerciseId}', this)">Record</button>
+                    </div>
+                </div>
+                <button class="add-set-btn" onclick="addSet('${exerciseId}')">+ Add Set</button>
+            `;
+
+            exerciseBlocks.appendChild(newBlock);
+            document.getElementById('exercise-suggestions').style.display = 'none';
+            document.getElementById('exercise-search').value = '';
+
+            if (!isRecovery) {
+                const savedExercises = JSON.parse(localStorage.getItem('currentExercises') || '[]');
+                savedExercises.push({
+                    id: exerciseId,
+                    exercise_name: exercise.exercise_name,
+                    equipment: exercise.equipment,
+                    variation: exercise.variation || 'standard'
+                });
+                localStorage.setItem('currentExercises', JSON.stringify(savedExercises));
+            }
+        }
+
+        function deleteExerciseBlock(exerciseId) {
+            console.log('Deleting exercise block:', exerciseId);
+            const block = document.getElementById(exerciseId);
+            if (block) {
+                block.remove();
+                exerciseData.delete(exerciseId);
+                
+                // Update localStorage
+                const savedExercises = JSON.parse(localStorage.getItem('currentExercises') || '[]');
+                const updatedExercises = savedExercises.filter(ex => ex.id !== exerciseId);
+                localStorage.setItem('currentExercises', JSON.stringify(updatedExercises));
+            }
+        }
+
+        function addSet(exerciseId) {
+            console.log('Adding new set to exercise:', exerciseId);
+            const block = document.getElementById(exerciseId);
+            const setGrid = block.querySelector('.set-grid');
+            const setCount = setGrid.querySelectorAll('.set-row').length + 1;
+            
+            const newSetRow = document.createElement('div');
+            newSetRow.className = 'set-row';
+            newSetRow.dataset.set = setCount;
+            newSetRow.innerHTML = `
+                <span class="set-number">${setCount}</span>
+                <input type="number" class="weight-input" placeholder="0">
+                <input type="number" class="reps-input" placeholder="0">
+                <button class="record-set-btn" onclick="recordSet('${exerciseId}', this)">Record</button>
+            `;
+            
+            setGrid.appendChild(newSetRow);
+        }
+
+        function recordSet(exerciseId, button) {
+            console.log('Recording set for exercise:', exerciseId);
+            const exercise = exerciseData.get(exerciseId);
+            const setRow = button.closest('.set-row');
+            const weight = setRow.querySelector('.weight-input').value;
+            const reps = setRow.querySelector('.reps-input').value;
+            const setNumber = setRow.dataset.set;
+
+            if (!weight || !reps || weight <= 0 || reps <= 0) {
+                alert('Please enter valid weight and reps');
+                return;
+            }
+
+            const workoutData = {
+                session_id: currentSessionId,
+                exercise_name: exercise.name,
+                equipment: exercise.equipment,
+                variation: exercise.variation,
+                sets: parseInt(setNumber),
+                reps: parseInt(reps),
+                weight: parseFloat(weight),
+                intensity_level: 'moderate',
+                rest_time: 60
+            };
+
+            console.log('Sending workout data:', workoutData);
+
+            fetch('/recordworkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(workoutData)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Set recorded successfully:', data);
+                button.textContent = '✓';
+                button.disabled = true;
+                button.classList.add('recorded');
+                setRow.classList.add('completed');
+                setRow.querySelector('.weight-input').disabled = true;
+                setRow.querySelector('.reps-input').disabled = true;
+            })
+            .catch(error => {
+                console.error('Error recording set:', error);
+                alert('Failed to record set: ' + error.message);
+            });
+        }
+
+        function updateTimer() {
+            if (!startTime) return;
+            const now = new Date();
+            const diff = now - startTime;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            
+            document.getElementById('workout-timer').textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function endSession() {
+            if (!confirm('Are you sure you want to end this workout session?')) {
+                return;
+            }
+
+            console.log('Ending session:', currentSessionId);
+
+            fetch('/end_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentSessionId })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to end session');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Session ended successfully:', data);
+                clearInterval(timerInterval);
+                localStorage.removeItem('currentSession');
+                localStorage.removeItem('currentExercises');
+                alert('Workout completed successfully!');
+                window.location.href = '/history';
+            })
+            .catch(error => {
+                console.error('Error ending session:', error);
+                alert('Failed to end session: ' + error.message);
+            });
+        }
+    </script>
 </body>
 </html>
