@@ -338,14 +338,14 @@ def history():
 
         # Prepare the history data with formatted date details and workout logs
         history_data = []
-        for session in workout_sessions:
-            workouts = WorkoutLog.query.filter_by(session_id=session.session_id, user_id=user_id).order_by(WorkoutLog.completed_at, WorkoutLog.exercise_name).all()
+        for workout_session in workout_sessions:  # Renamed to avoid conflict with Flask session
+            workouts = WorkoutLog.query.filter_by(session_id=workout_session.session_id, user_id=user_id).order_by(WorkoutLog.completed_at, WorkoutLog.exercise_name).all()
 
             if not workouts:
                 continue
             
             # Format dates for display
-            start_time = session.start_time
+            start_time = workout_session.start_time
             formatted_date = {
                 'month_year': start_time.strftime("%B %Y"),
                 'day_name': start_time.strftime("%A"),
@@ -369,18 +369,19 @@ def history():
             ]
             
             history_data.append({
-                "session_id": session.session_id,
-                "session_name": session.session_name,
+                "session_id": workout_session.session_id,
+                "session_name": workout_session.session_name,
                 "formatted_date": formatted_date,
                 "start_time": start_time.strftime("%Y-%m-%d %H:%M") if start_time else None,
-                "end_time": session.end_time.strftime("%Y-%m-%d %H:%M") if session.end_time else None,
-                "total_duration": str(session.get_total_duration()) if session.end_time else None,
-                "status": session.status,
+                "end_time": workout_session.end_time.strftime("%Y-%m-%d %H:%M") if workout_session.end_time else None,
+                "total_duration": str(workout_session.get_total_duration()) if workout_session.end_time else None,
+                "status": workout_session.status,
                 "workouts": workout_list
             })
 
         return jsonify(history_data), 200
     return jsonify({"error": "Unauthorized"}), 401
+
 
 if __name__ == '__main__':
     app.run(debug=True)
