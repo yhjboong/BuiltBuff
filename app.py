@@ -179,8 +179,10 @@ def profile():
         height_feet = height_in_inches // 12
         height_inches = height_in_inches % 12
         session_count = WorkoutSession.query.filter_by(user_id=user.user_id).count()
+        
+        # Use first_name and last_name instead of name
         user_data = {
-            "name": user.name,
+            "name": f"{user.first_name} {user.last_name}",
             "email": user.email,
             "age": user.age,
             "weight": user.weight,
@@ -190,6 +192,7 @@ def profile():
         }
         return render_template('profile.html', user_data=user_data)
     return redirect(url_for('login'))
+
 
 @app.route('/view_workout/<int:session_id>/<int:workout_id>', methods=['GET'])
 def view_workout(session_id, workout_id):
