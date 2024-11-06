@@ -12,63 +12,82 @@
     <nav class="navbar">
         <img src="buffbuffalo.png" alt="BuiltBuff Logo" class="navbar-logo">
         <div class="navbar-content">
-            <div class="nav-item">
-                <div class="nav-icon"></div>
-                <span class="nav-label">Profile</span>
-            </div>
-            <div class="nav-item">
-                <div class="nav-icon"></div>
-                <span class="nav-label">Start Workout</span>
-            </div>
             <div class="nav-item active">
                 <div class="nav-icon"></div>
                 <span class="nav-label">History</span>
-            </div>
-            <div class="nav-item">
-                <div class="nav-icon"></div>
-                <span class="nav-label">Exercises</span>
             </div>
         </div>
     </nav>
 
     <main class="main-content">
         <h1 class="heading-primary">History</h1>
-        <p class="text-gray">OCTOBER 2024</p>
-
+        {% set current_month = none %}
+        
         <div class="workout-grid">
-            <div class="workout-card">
-                <div class="card-header">
-                    <h2 class="heading-secondary">Chest, Triceps, Shoulders</h2>
-                    <p class="text-gray">Tuesday, Oct 29</p>
-                </div>
-                
-                <div class="stats-container">
-                    <div class="stat-item">
-                        <span class="stat-icon"></span>
-                        <span class="stat-value">53m</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-icon"></span>
-                        <span class="stat-value">9520 lb</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-icon"></span>
-                        <span class="stat-value">0 PRs</span>
-                    </div>
-                </div>
+            {% for session in workout_sessions %}
+                {% if session.formatted_date.month_year != current_month %}
+                    {% set current_month = session.formatted_date.month_year %}
+                    <p class="text-gray">{{ current_month|upper }}</p>
+                {% endif %}
 
-                <!-- Exercise list -->
-                <div class="exercise-container">
-                    <div class="exercise-header">
-                        <h3>Exercise</h3>
-                        <h3>Best Set</h3>
+                <div class="workout-card">
+                    <div class="card-header">
+                        <h2 class="heading-secondary">{{ session.session_name }}</h2>
+                        <p class="text-gray">{{ session.formatted_date.day_name }}, {{ session.formatted_date.short_date }}</p>
                     </div>
-                    <div class="exercise-list">
-                        <!-- Exercise items -->
+                    
+                    <div class="stats-container">
+                        <div class="stat-item">
+                            <span class="stat-icon"></span>
+                            <span class="stat-value">
+                                {% if session.total_duration %}
+                                    {% set duration = session.total_duration.split(', ')[1].split(':') %}
+                                    {{ duration[0] }}h {{ duration[1] }}m
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon"></span>
+                            <span class="stat-value">{{ session.workouts|length }} sets</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon"></span>
+                            <span class="stat-value">0 PRs</span>
+                        </div>
+                    </div>
+
+                    <div class="exercise-container">
+                        <div class="exercise-header">
+                            <h3>Exercise</h3>
+                            <h3>Best Set</h3>
+                        </div>
+                        <div class="exercise-list">
+                            {% set grouped_exercises = {} %}
+                            {% for workout in session.workouts %}
+                                {% if workout.exercise_name not in grouped_exercises %}
+                                    {% set _ = grouped_exercises.update({workout.exercise_name: {'count': 1, 'reps': workout.reps}}) %}
+                                {% else %}
+                                    {% set _ = grouped_exercises.update({
+                                        workout.exercise_name: {
+                                            'count': grouped_exercises[workout.exercise_name]['count'] + 1,
+                                            'reps': workout.reps
+                                        }
+                                    }) %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% for exercise_name, data in grouped_exercises.items() %}
+                                <div class="exercise-item">
+                                    <span class="exercise-name">{{ exercise_name|title }}</span>
+                                    <span class="exercise-stats">{{ data.count }}×{{ data.reps }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
-            </div>
-            <!-- Additional workout cards -->
+            {% endfor %}
         </div>
     </main>
 </body>

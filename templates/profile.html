@@ -17,11 +17,17 @@
         <h1 class="heading-primary">Profile</h1>
         
         <div class="profile-card">
-            <img src="" alt="Profile" class="profile-image">
+            <img src="/static/default-profile.png" alt="Profile" class="profile-image">
             <div class="profile-info">
-                <h2 class="heading-secondary">Baba Booey</h2>
-                <p class="workout-count">38 Workouts</p>
-                <p class="profile-quote">"Health is wealth."</p>
+                <h2 class="heading-secondary" id="userName">Loading...</h2>
+                <div class="user-details">
+                    <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
+                    <p><strong>Age:</strong> <span id="userAge">Loading...</span></p>
+                    <p><strong>Weight:</strong> <span id="userWeight">Loading...</span> lbs</p>
+                    <p><strong>Height:</strong> <span id="userHeight">Loading...</span></p>
+                    <p><strong>Gender:</strong> <span id="userGender">Loading...</span></p>
+                </div>
+                <p class="workout-count"><span id="workoutCount">0</span> Workouts</p>
             </div>
         </div>
 
@@ -37,5 +43,49 @@
             <!-- Additional chart cards -->
         </div>
     </main>
+
+    <script>
+        // Function to fetch and display user profile data
+        async function loadProfileData() {
+            try {
+                const response = await fetch("{{ url_for('profile') }}", {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Not authorized');
+                }
+
+                const data = await response.json();
+                
+                // Update profile information
+                document.getElementById('userName').textContent = data.profile.name;
+                document.getElementById('userEmail').textContent = data.profile.email;
+                document.getElementById('userAge').textContent = data.profile.age;
+                document.getElementById('userWeight').textContent = data.profile.weight;
+                document.getElementById('userHeight').textContent = data.profile.height;
+                document.getElementById('userGender').textContent = data.profile.gender;
+                document.getElementById('workoutCount').textContent = data.workout_session_count;
+
+                // Capitalize first letter of gender
+                const genderElement = document.getElementById('userGender');
+                genderElement.textContent = genderElement.textContent.charAt(0).toUpperCase() + 
+                                         genderElement.textContent.slice(1);
+
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                // Redirect to login if unauthorized
+                if (error.message === 'Not authorized') {
+                    window.location.href = "{{ url_for('login') }}";
+                }
+            }
+        }
+
+        // Load profile data when page loads
+        document.addEventListener('DOMContentLoaded', loadProfileData);
+    </script>
 </body>
 </html>
