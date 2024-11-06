@@ -1,55 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1, width=device-width">
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL+Monster+Beast:wght@400&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap" />
-    <title>Exercises - BuiltBuff</title>
-</head>
-<body>
-    <div class="container">
-        <nav class="navbar">
-            <img class="navbar-logo" src="buffbuffalo.png" alt="BuiltBuff Logo">
-            <div class="nav-menu">
-                <a href="/profile" class="nav-item">
-                    <div class="nav-icon">
-                        <div class="nav-icon-inner"></div>
-                    </div>
-                    <span class="nav-label">Profile</span>
-                </a>
-                
-                <a href="/workout" class="nav-item">
-                    <div class="nav-icon">
-                        <div class="nav-icon-inner"></div>
-                    </div>
-                    <span class="nav-label">Start Workout</span>
-                </a>
-                
-                <a href="/history" class="nav-item">
-                    <div class="nav-icon">
-                        <div class="nav-icon-inner history-icon"></div>
-                        <div class="nav-icon-inner history-icon-bottom"></div>
-                    </div>
-                    <span class="nav-label">History</span>
-                </a>
-                
-                <a href="/exercises" class="nav-item active">
-                    <div class="nav-icon">
-                        <div class="nav-icon-inner"></div>
-                    </div>
-                    <span class="nav-label">Exercises</span>
-                </a>
-            </div>
-        </nav>
+{% extends "base.html" %}
 
-        <main class="content">
-            <div class="exercises-container">
-                <div class="exercises-card"></div>
-            </div>
-        </main>
+{% block title %}Exercises - BuiltBuff{% endblock %}
+
+{% block content %}
+<div class="exercises-container">
+    <div class="exercises-card">
+        <!-- Exercises content -->
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

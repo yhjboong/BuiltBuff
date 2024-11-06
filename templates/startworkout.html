@@ -1,60 +1,19 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1, width=device-width">
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL+Monster+Beast:wght@400&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
-    <title>Workout - BuiltBuff</title>
-</head>
-<body>
-    <nav class="navbar">
-        <!-- Same navbar as above -->
-    </nav>
+{% extends "base.html" %}
 
-    <main class="main-content">
-        <div class="workout-container">
-            <div class="workout-header">
-                <h1 class="heading-primary">Chest, Triceps, Shoulders</h1>
-                <span class="workout-timer">0:12</span>
-                <button class="btn btn-primary finish-btn">Finish</button>
-            </div>
+{% block title %}Start Workout - BuiltBuff{% endblock %}
 
-            <div class="exercise-blocks">
-                <div class="exercise-block">
-                    <div class="exercise-header">
-                        <h3 class="exercise-name">Bench Press (Barbell)</h3>
-                        <div class="menu-dots">
-                            <span class="dot"></span>
-                            <span class="dot"></span>
-                            <span class="dot"></span>
-                        </div>
-                    </div>
+{% block content %}
+<h1 class="heading-primary">Start a New Workout Session</h1>
 
-                    <div class="set-grid">
-                        <div class="set-header">
-                            <span>Set</span>
-                            <span>Previous</span>
-                            <span>lbs</span>
-                            <span>Reps</span>
-                        </div>
-
-                        <div class="set-row status-success">
-                            <span class="set-number">1</span>
-                            <span class="previous-weight">115 lb x 4</span>
-                            <span class="current-weight">135</span>
-                            <span class="reps">12</span>
-                            <button class="btn-check"></button>
-                        </div>
-                        <!-- Additional set rows -->
-                    </div>
-
-                    <button class="btn btn-add">+ Add Set</button>
-                </div>
-                <!-- Additional exercise blocks -->
-            </div>
+<div class="start-workout-card">
+    <form action="{{ url_for('startworkout') }}" method="POST" class="start-workout-form">
+        <div class="form-group">
+            <label for="session_name">Session Name:</label>
+            <input type="text" id="session_name" name="session_name" class="form-control" placeholder="e.g., Chest Day" required>
         </div>
-    </main>
-</body>
-</html>
+        <!-- Add more form fields as needed -->
+        <button type="submit" class="btn btn-primary">Start Workout</button>
+    </form>
+</div>
+
+{% endblock %}
