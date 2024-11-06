@@ -459,6 +459,7 @@ def end_session():
         }), 200
 
     return jsonify({"error": "Unauthorized"}), 401
+
 @app.route('/history', methods=['GET'])
 def history():
     if not session.get('user_id'):
@@ -480,6 +481,7 @@ def history():
         
         if not workouts:
             continue
+
             
         # Format dates for display
         start_time = workout_session.start_time
