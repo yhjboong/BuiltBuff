@@ -22,7 +22,8 @@ def home():
 @app.route('/signup', methods=['POST', 'GET'])
 def signup():
     if request.method == 'POST':
-        name = request.form['name']
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
         email = request.form['email']
         password = generate_password_hash(request.form['password'])
         age = request.form['age']
@@ -33,6 +34,7 @@ def signup():
         height_foot = int(request.form.get('height_foot', 0))
         height_inch = int(request.form.get('height_inch', 0))
         total_height_in_inches = height_foot * 12 + height_inch
+        
         # Check if email already exists
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
@@ -43,7 +45,8 @@ def signup():
         
         # Create a new user
         new_user = User(
-            name=name, 
+            first_name=first_name,
+            last_name=last_name,
             email=email, 
             password=password,
             age=age,
@@ -56,6 +59,7 @@ def signup():
         session['user_id'] = new_user.user_id
         return redirect(url_for('profile'))
     return render_template('signup.html')
+
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
