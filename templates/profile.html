@@ -1,34 +1,22 @@
 {% extends "base.html" %}
-
 {% block title %}Profile - BuiltBuff{% endblock %}
-
 {% block content %}
-<h1 class="heading-primary">Profile</h1>
-
-<div class="profile-card">
-    <img src="{{ url_for('static', filename='default-profile.png') }}" alt="Profile" class="profile-image">
-    <div class="profile-info">
-        <h2 class="heading-secondary">{{ user_data.name }}</h2>
-        <div class="user-details">
-            <p><strong>Email:</strong> {{ user_data.email }}</p>
-            <p><strong>Age:</strong> {{ user_data.age }}</p>
-            <p><strong>Weight:</strong> {{ user_data.weight }} lbs</p>
-            <p><strong>Height:</strong> {{ user_data.height }}</p>
-            <p><strong>Gender:</strong> {{ user_data.gender }}</p>
-        </div>
-        <p class="workout-count">{{ user_data.workout_session_count }} Workouts</p>
-    </div>
-</div>
-
-<h2 class="heading-secondary">Dashboard</h2>
-
-<div class="chart-grid">
-    <div class="chart-card">
-        <h3 class="chart-title">Bench Press All Time</h3>
-        <div class="chart-content">
-            <!-- Chart content -->
+<main class="main-content">
+    <h1 class="heading-primary">Profile</h1>
+    <div class="profile-card">
+        <img src="{{ url_for('static', filename='default-profile.png') }}" alt="Profile" class="profile-image">
+        <div class="profile-info">
+            <h2 class="heading-secondary">{{ user_data.name }}</h2>
+            <div class="user-details">
+                <p><strong>Email:</strong> {{ user_data.email }}</p>
+                <p><strong>Age:</strong> {{ user_data.age }}</p>
+                <p><strong>Weight:</strong> {{ user_data.weight }} lbs</p>
+                <p><strong>Height:</strong> {{ user_data.height }}</p>
+                <p><strong>Gender:</strong> {{ user_data.gender }}</p>
+            </div>
+            <p class="workout-count">{{ user_data.workout_session_count }} Workouts</p>
+            <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Edit Profile</a>
         </div>
     </div>
-    <!-- Additional chart cards -->
-</div>
+</main>
 {% endblock %}

@@ -1,11 +1,59 @@
+<!-- exercises.html -->
 {% extends "base.html" %}
-
 {% block title %}Exercises - BuiltBuff{% endblock %}
-
 {% block content %}
-<div class="exercises-container">
-    <div class="exercises-card">
-        <!-- Exercises content -->
+<div class="container">
+    <h1>Exercises</h1>
+    <input type="text" id="search-input" placeholder="Search exercises..." />
+
+    <div id="exercises-container">
+        <!-- Exercise cards will be inserted here -->
     </div>
 </div>
+
+<script>
+    // Function to fetch and display exercises
+    function fetchExercises() {
+        const searchTerm = document.getElementById('search-input').value;
+        fetch('/get_exercises?search_term=' + encodeURIComponent(searchTerm))
+            .then(response => response.json())
+            .then(data => {
+                const exercisesContainer = document.getElementById('exercises-container');
+                exercisesContainer.innerHTML = '';
+                data.results.forEach(exercise => {
+                    const exerciseCard = document.createElement('div');
+                    exerciseCard.classList.add('exercise-card');
+
+                    const exerciseName = document.createElement('h2');
+                    exerciseName.textContent = exercise.exercise_name;
+
+                    const equipment = document.createElement('p');
+                    equipment.innerHTML = `<strong>Equipment:</strong> ${exercise.equipment}`;
+
+                    const variation = document.createElement('p');
+                    variation.innerHTML = `<strong>Variation:</strong> ${exercise.variation}`;
+
+                    const description = document.createElement('div');
+                    description.innerHTML = `<strong>Description:</strong><br>
+                        <strong>Preparation:</strong> ${exercise.preparation}<br>
+                        <strong>Execution:</strong> ${exercise.execution}`;
+
+                    exerciseCard.appendChild(exerciseName);
+                    exerciseCard.appendChild(equipment);
+                    exerciseCard.appendChild(variation);
+                    exerciseCard.appendChild(description);
+
+                    exercisesContainer.appendChild(exerciseCard);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching exercises:', error);
+            });
+    }
+
+    document.getElementById('search-input').addEventListener('input', fetchExercises);
+
+    // Fetch exercises on page load
+    fetchExercises();
+</script>
 {% endblock %}

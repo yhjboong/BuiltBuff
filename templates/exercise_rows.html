@@ -1,0 +1,9 @@
+{% for exercise in exercises %}
+<tr>
+    <td>{{ exercise.name }}</td>
+    <td>{{ exercise.equipment }}</td>
+    <td>{{ exercise.variation or 'N/A' }}</td>
+    <td>{{ exercise.description.split('Preparation: ')[1].split('Execution: ')[0].strip() }}</td>
+    <td>{{ exercise.description.split('Execution: ')[1].strip() }}</td>
+</tr>
+{% endfor %}

@@ -39,7 +39,13 @@ class WorkoutSession(db.Model):
     workout_logs = db.relationship('WorkoutLog', backref='session', lazy=True)
 
     def get_total_duration(self):
-        return self.end_time - self.start_time if self.end_time else None
+        if self.end_time and self.start_time:
+            total_duration = self.end_time - self.start_time
+            hours, remainder = divmod(total_duration.total_seconds(), 3600)
+            minutes, seconds = divmod(remainder, 60)
+            return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
+        else:
+            return "0:0:0"
 
 class WorkoutLog(db.Model):
     __tablename__ = 'workout_logs'

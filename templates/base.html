@@ -1,45 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- Common head elements -->
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1, width=device-width">
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL+Monster+Beast:wght@400&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
     <title>{% block title %}BuiltBuff{% endblock %}</title>
 </head>
 <body>
     <nav class="navbar">
-        <img class="navbar-logo" src="{{ url_for('static', filename='buffbuffalo.png') }}" alt="BuiltBuff Logo">
+        <img src="{{ url_for('static', filename='buffbuffalo.png') }}" alt="BuiltBuff Logo" class="navbar-logo">
         <div class="nav-menu">
             <a href="{{ url_for('profile') }}" class="nav-item {% if request.endpoint == 'profile' %}active{% endif %}">
-                <div class="nav-icon profile-icon"></div>
                 <span class="nav-label">Profile</span>
             </a>
-            <a href="{{ url_for('startworkout') }}" class="nav-item {% if request.endpoint == 'startworkout' %}active{% endif %}">
-                <div class="nav-icon workout-icon"></div>
+            <a href="{{ url_for('startworkout') }}" class="nav-item {% if request.endpoint in ['startworkout', 'current_workout'] %}active{% endif %}">
                 <span class="nav-label">Start Workout</span>
             </a>
             <a href="{{ url_for('history') }}" class="nav-item {% if request.endpoint == 'history' %}active{% endif %}">
-                <div class="nav-icon history-icon"></div>
                 <span class="nav-label">History</span>
             </a>
-            <a href="{{ url_for('search_exercises') }}" class="nav-item {% if request.endpoint == 'search_exercises' %}active{% endif %}">
-                <div class="nav-icon exercises-icon"></div>
+            <a href="{{ url_for('exercises') }}" class="nav-item {% if request.endpoint == 'exercises' %}active{% endif %}">
                 <span class="nav-label">Exercises</span>
             </a>
-            
-            <!-- Logout Link: Visible Only When User Is Logged In -->
-            {% if 'user_id' in session %}
-                <a href="{{ url_for('logout') }}" class="nav-item {% if request.endpoint == 'logout' %}active{% endif %}">
-                    <div class="nav-icon logout-icon"></div>
-                    <span class="nav-label">Logout</span>
-                </a>
-            {% endif %}
+            <a href="{{ url_for('logout') }}" class="nav-item">
+                <span class="nav-label">Logout</span>
+            </a>
         </div>
     </nav>
-
-    <main class="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    <main>
         {% block content %}{% endblock %}
     </main>
 </body>

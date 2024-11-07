@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Workout Recommendations</title>
+</head>
+<body>
+    <h1>Workout Recommendations</h1>
+    <ul>
+        {% for rec in recommendations %}
+            <li>{{ rec.category_id }} - Popularity: {{ rec.popularity }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('profile') }}">Back to Profile</a>
+</body>
+</html>

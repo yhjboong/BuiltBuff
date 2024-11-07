@@ -1,0 +1,199 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: #F0F0F0;
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    background-color: #312F2F;
+    padding: 10px 20px;
+    color: #BDBBBB;
+}
+
+.navbar-logo {
+    width: 50px;
+    margin-right: 20px;
+}
+
+.navbar-content {
+    display: flex;
+    gap: 20px;
+}
+
+.nav-item {
+    color: #BDBBBB;
+    text-decoration: none;
+    font-size: 18px;
+    font-family: 'NCL Monster Beast', sans-serif;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.nav-item.active {
+    font-weight: bold;
+    color: #FFFFFF;
+}
+
+.main-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.heading-primary {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.workout-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.workout-card {
+    background-color: #FFFFFF;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.profile-card {
+    width: 80%;
+    max-width: 600px;
+    margin: 20px auto;
+    text-align: center;
+}
+
+.alert {
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #31708f;
+    background-color: #d9edf7;
+    border: 1px solid #bce8f1;
+}
+
+.alert-info {
+    background-color: #d9edf7;
+    color: #31708f;
+}
+
+.container {
+    width: 100%;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    background-color: #312F2F;
+    padding: 20px;
+    color: #BDBBBB;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo img {
+    width: 79px;
+    height: 79px;
+}
+
+.nav {
+    display: flex;
+    gap: 40px;
+    margin-left: auto;
+}
+
+
+.profile-section {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+}
+
+.avatar img {
+    width: 117px;
+    height: 115px;
+    border-radius: 50%;
+    margin-right: 20px;
+}
+
+.user-details {
+    font-family: 'Roboto', sans-serif;
+}
+
+.username {
+    font-weight: 700;
+    font-size: 24px;
+}
+
+.workouts, .quote {
+    color: #918A8A;
+    font-size: 18px;
+}
+
+.dashboard-section {
+    margin-top: 20px;
+}
+
+.stat-card {
+    background: #FFF;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.stat-card h4 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.stats-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.stat-values p {
+    display: inline-block;
+    margin-right: 5px;
+    color: #444;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+}
+
+.exercise-container {
+    margin-top: 20px;
+}
+
+.exercise-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.exercise-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+}
+
+.text-gray {
+    color: #777777;
+}
