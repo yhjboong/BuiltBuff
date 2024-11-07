@@ -1,78 +1,185 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1, width=device-width">
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=NCL+Monster+Beast:wght@400&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" />
-    <title>Record Workout - BuiltBuff</title>
-</head>
-<body>
-    <nav class="navbar">
-        <img class="navbar-logo" src="buffbuffalo.png" alt="BuiltBuff Logo">
-        <div class="nav-menu">
-            <div class="nav-item">
-                <div class="nav-icon profile-icon"></div>
-                <span class="nav-label">Profile</span>
-            </div>
-            <div class="nav-item active">
-                <div class="nav-icon workout-icon"></div>
-                <span class="nav-label">Start Workout</span>
-            </div>
-            <div class="nav-item">
-                <div class="nav-icon history-icon"></div>
-                <span class="nav-label">History</span>
-            </div>
-            <div class="nav-item">
-                <div class="nav-icon exercises-icon"></div>
-                <span class="nav-label">Exercises</span>
+{% extends "base.html" %}
+
+{% block title %}Record Workout - BuiltBuff{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>{{ session_name }}</h3>
+            <div>
+                <span id="timer">00:00:00</span>
+                <button class="btn btn-success ml-3" onclick="finishWorkout()">Finish Workout</button>
             </div>
         </div>
-    </nav>
-
-    <main class="content">
-        <div class="workout-card">
-            <div class="workout-header">
-                <h1 class="workout-title">Chest, Triceps, Shoulders</h1>
-                <div class="timer">0:12</div>
-                <div class="notes">Notes</div>
-                <button class="btn btn-success finish-btn">Finish</button>
+        <div class="card-body">
+            <button class="btn btn-primary mb-3" id="add-exercise-btn">+ Add Exercise</button>
+            <div id="exercises-container">
+                <!-- Dynamic Exercise Cards -->
             </div>
-
-            <div class="exercise-block">
-                <div class="exercise-header">
-                    <h2 class="exercise-name">Bench Press (Barbell)</h2>
-                    <div class="menu-dots">
-                        <span class="dot"></span>
-                        <span class="dot"></span>
-                        <span class="dot"></span>
-                    </div>
-                </div>
-
-                <div class="set-columns">
-                    <div class="column-headers">
-                        <span>Set</span>
-                        <span>Previous</span>
-                        <span>lbs</span>
-                        <span>Reps</span>
-                    </div>
-
-                    <div class="set-row completed">
-                        <div class="set-number">1</div>
-                        <div class="previous-weight">115 lb x 4</div>
-                        <input type="number" class="weight-input" value="135">
-                        <input type="number" class="reps-input" value="12">
-                        <button class="check-btn success"></button>
-                    </div>
-
-                    <!-- Additional set rows -->
-                    <button class="btn btn-add">+ Add Set</button>
-                </div>
-            </div>
-            
-            <!-- Additional exercise blocks -->
         </div>
-    </main>
-</body>
-</html>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let timerInterval;
+    let totalSeconds = 0;
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            totalSeconds++;
+            const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            document.getElementById('timer').innerText = `${hours}:${minutes}:${seconds}`;
+        }, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+    }
+
+    window.onload = function() {
+        startTimer();
+
+        // Attach event listener to "+ Add Exercise" button
+        document.getElementById('add-exercise-btn').addEventListener('click', addExercise);
+    }
+
+    function addExercise() {
+        // Create a new exercise card
+        const exerciseCard = document.createElement('div');
+        exerciseCard.classList.add('card', 'mb-3', 'exercise-entry');
+        exerciseCard.innerHTML = `
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="exercise-select">Select Exercise:</label>
+                    <select class="form-control exercise-select" onchange="selectExercise(this)">
+                        <option value="">Choose an exercise</option>
+                    </select>
+                </div>
+                <h5 class="exercise-title">Exercise Title</h5>
+                <div class="sets-container">
+                    <!-- Set Rows -->
+                </div>
+                <button type="button" class="btn btn-secondary mt-2" onclick="addSet(this)">+ Add Set</button>
+                <button type="button" class="btn btn-danger mt-2 float-right" onclick="deleteExercise(this)">Delete Exercise</button>
+            </div>
+        `;
+        document.getElementById('exercises-container').appendChild(exerciseCard);
+
+        // Fetch exercises and populate the dropdown
+        fetch(`{{ url_for("search_exercises") }}?search_term=`)
+            .then(response => response.json())
+            .then(data => {
+                const select = exerciseCard.querySelector('.exercise-select');
+                data.exercises.forEach(ex => {
+                    const option = document.createElement('option');
+                    option.value = ex.id;
+                    option.textContent = ex.name;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching exercises:', error);
+                alert('Failed to load exercises.');
+            });
+
+        // Add three initial sets
+        const setsContainer = exerciseCard.querySelector('.sets-container');
+        for (let i = 0; i < 3; i++) {
+            addSet({ currentTarget: exerciseCard.querySelector('.btn.btn-secondary') });
+        }
+    }
+
+    function selectExercise(selectElement) {
+        const exerciseTitle = selectElement.closest('.card-body').querySelector('.exercise-title');
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        exerciseTitle.textContent = selectedOption.textContent || 'Exercise Title';
+    }
+
+    function addSet(button) {
+        const setsContainer = button.closest('.card-body').querySelector('.sets-container');
+        const setRow = document.createElement('div');
+        setRow.classList.add('form-row', 'align-items-center', 'mb-2');
+
+        setRow.innerHTML = `
+            <div class="col">
+                <input type="number" class="form-control weight-input" placeholder="Weight (lbs)" required>
+            </div>
+            <div class="col">
+                <input type="number" class="form-control reps-input" placeholder="Reps" required>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-danger" onclick="deleteSet(this)">-</button>
+            </div>
+        `;
+        setsContainer.appendChild(setRow);
+    }
+
+    function deleteSet(button) {
+        const setRow = button.closest('.form-row');
+        setRow.remove();
+    }
+
+    function deleteExercise(button) {
+        const exerciseCard = button.closest('.card');
+        exerciseCard.remove();
+    }
+
+    function finishWorkout() {
+        stopTimer();
+        // Collect all workout data
+        const exercises = [];
+        document.querySelectorAll('.exercise-entry').forEach(entry => {
+            const select = entry.querySelector('.exercise-select');
+            const exerciseId = select.value;
+            const exerciseName = entry.querySelector('.exercise-title').textContent;
+            if (exerciseId && exerciseName !== 'Exercise Title') {
+                const sets = [];
+                entry.querySelectorAll('.sets-container .form-row').forEach(set => {
+                    const weight = set.querySelector('.weight-input').value;
+                    const reps = set.querySelector('.reps-input').value;
+                    if (weight && reps) {
+                        sets.push({ weight: parseFloat(weight), reps: parseInt(reps) });
+                    }
+                });
+                exercises.push({ exercise_id: exerciseId, exercise_name: exerciseName, sets });
+            }
+        });
+
+        if (exercises.length === 0) {
+            alert('No exercises recorded.');
+            return;
+        }
+
+        // Send data to the server
+        fetch('{{ url_for("record_workout") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                session_id: {{ session_id }},
+                exercises: exercises,
+                duration: totalSeconds
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+                window.location.href = "{{ url_for('profile') }}";
+            } else if (data.error) {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error recording workout:', error);
+            alert('Failed to record workout.');
+        });
+    }
+</script>
+{% endblock %}

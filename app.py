@@ -86,59 +86,76 @@ def search_exercises():
     if 'user_id' in session:
         search_term = request.args.get('search_term', '')
         if not search_term:
-            return jsonify({"error": "Please provide an exercise name to search."}), 400
+            return jsonify({"error": "Search term is required."}), 400
 
-        # Filter the exercises in ExerciseList by matching the search term in the exercise name
         exercises = ExerciseList.query.filter(ExerciseList.name.contains(search_term)).all()
+        exercises_data = [{"id": ex.id, "name": ex.name} for ex in exercises]
 
-        # Collect unique combinations of exercise_name, equipment, and variation
-        unique_exercises = {
-            (exercise.name, exercise.equipment, exercise.variation)
-            for exercise in exercises
-        }
+        return jsonify({"exercises": exercises_data}), 200
 
-        # Format the response as a list of dictionaries
-        results = [
-            {"exercise_name": name, "equipment": equipment, "variation": variation}
-            for name, equipment, variation in unique_exercises
-        ]
-
-        return jsonify({"results": results}), 200
     return jsonify({"error": "Unauthorized"}), 401
 
 @app.route('/recordworkout', methods=['POST'])
 def record_workout():
     if 'user_id' in session:
-        workout_data = request.get_json()
-        session_id = workout_data.get('session_id')
+        data = request.get_json()
+        session_id = data.get('session_id')
+        exercises = data.get('exercises', [])
+        duration = data.get('duration', 0)
 
-        # Check if session_id is provided and if it's an active session for the user
-        if not session_id:
-            return jsonify({"error": "session_id is required"}), 400
+        if not session_id or not exercises:
+            return jsonify({"error": "Invalid workout data."}), 400
 
         workout_session = WorkoutSession.query.filter_by(session_id=session_id, user_id=session['user_id'], status='active').first()
         if not workout_session:
-            return jsonify({"error": "No active workout session found with the provided session_id"}), 404
+            return jsonify({"error": "Active workout session not found."}), 404
 
-        # Verify exercise details
-        exercise_name = workout_data.get('exercise_name')
-        weight = workout_data.get('weight')
-        reps = workout_data.get('reps')
-        if not exercise_name or not weight or not reps:
-            return jsonify({"error": "exercise_name, weight, and reps are required"}), 400
+        try:
+            for exercise in exercises:
+                exercise_id = exercise.get('exercise_id')
+                exercise_name = exercise.get('exercise_name')
+                sets = exercise.get('sets', [])
+                
+                for set_entry in sets:
+                    weight = float(set_entry.get('weight'))
+                    reps = int(set_entry.get('reps'))
 
-        # Create a new workout log
-        new_workout_log = WorkoutLog(
-            user_id=session['user_id'],
-            session_id=session_id,
-            exercise_name=exercise_name,
-            weight=weight,
-            reps=reps
-        )
-        db.session.add(new_workout_log)
-        db.session.commit()
-        return jsonify({"message": "Workout recorded successfully"}), 201
+                    workout_log = WorkoutLog(
+                        user_id=session['user_id'],
+                        session_id=session_id,
+                        exercise_name=exercise_name,
+                        weight=weight,
+                        reps=reps,
+                        intensity_level='medium',  # Placeholder or implement actual logic
+                        rest_time=60  # Placeholder or implement actual logic
+                    )
+                    db.session.add(workout_log)
+
+            # Update workout session
+            workout_session.end_time = datetime.utcnow()
+            workout_session.status = 'completed'
+            db.session.commit()
+
+            # Optionally, update workout history
+            # update_workout_history(session_id)
+
+            return jsonify({"message": "Workout recorded successfully."}), 201
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": f"Failed to record workout: {str(e)}"}), 500
+
     return jsonify({"error": "Unauthorized"}), 401
+
+@app.route('/recordworkout/<int:session_id>', methods=['GET'])
+def recordworkout(session_id):
+    if 'user_id' in session:
+        workout_session = WorkoutSession.query.filter_by(session_id=session_id, user_id=session['user_id'], status='active').first()
+        if not workout_session:
+            flash('Active workout session not found.', 'danger')
+            return redirect(url_for('startworkout'))
+
+        return render_template('recordworkout.html', session_id=workout_session.session_id, session_name=workout_session.session_name)
+    return redirect(url_for('login'))
 
 @app.route('/update_workout/<int:session_id>/<int:workout_id>', methods=['POST'])
 def update_workout(session_id, workout_id):
@@ -242,8 +259,10 @@ def startworkout():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        # Extract form data (ensure your form fields match these names)
-        session_name = request.form.get('session_name', 'Workout Session')
+        session_name = request.form.get('session_name')
+        if not session_name:
+            flash('Workout title is required.', 'danger')
+            return redirect(url_for('startworkout'))
 
         # Create a new workout session
         new_session = WorkoutSession(
@@ -255,10 +274,9 @@ def startworkout():
         db.session.add(new_session)
         db.session.commit()
 
-        flash('Workout session started successfully!')
-        return redirect(url_for('profile'))
+        flash('Workout session started successfully!', 'success')
+        return redirect(url_for('recordworkout', session_id=new_session.session_id))
 
-    # For GET request, render the startworkout.html template
     return render_template('startworkout.html')
 
 @app.route('/view_current_session', methods=['GET'])
