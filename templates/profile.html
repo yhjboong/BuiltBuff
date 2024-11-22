@@ -1,22 +1,120 @@
 {% extends "base.html" %}
-{% block title %}Profile - BuiltBuff{% endblock %}
+
 {% block content %}
-<main class="main-content">
-    <h1 class="heading-primary">Profile</h1>
-    <div class="profile-card">
-        <img src="{{ url_for('static', filename='default-profile.png') }}" alt="Profile" class="profile-image">
-        <div class="profile-info">
-            <h2 class="heading-secondary">{{ user_data.name }}</h2>
-            <div class="user-details">
-                <p><strong>Email:</strong> {{ user_data.email }}</p>
-                <p><strong>Age:</strong> {{ user_data.age }}</p>
-                <p><strong>Weight:</strong> {{ user_data.weight }} lbs</p>
-                <p><strong>Height:</strong> {{ user_data.height }}</p>
-                <p><strong>Gender:</strong> {{ user_data.gender }}</p>
+<div class="container py-4">
+    <div class="profile-card card">
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1>{{ user.first_name }} {{ user.last_name }}</h1>
+                    <p class="mb-0">{{ user.email }}</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-light">Edit Profile</a>
+                </div>
             </div>
-            <p class="workout-count">{{ user_data.workout_session_count }} Workouts</p>
-            <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Edit Profile</a>
+        </div>
+
+        <!-- Profile Body -->
+        <div class="card-body">
+            <!-- Personal Stats -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card text-center">
+                        <h3>{{ user.weight|default('--', true) }}</h3>
+                        <p class="text-muted mb-0">Weight (lbs)</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card text-center">
+                        <h3>{{ user.height|default('--', true) }}</h3>
+                        <p class="text-muted mb-0">Height (inches)</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card text-center">
+                        <h3>{{ user.age|default('--', true) }}</h3>
+                        <p class="text-muted mb-0">Age</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workout Statistics -->
+            <div class="profile-stats">
+                <h3 class="mb-4">Workout Statistics</h3>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <h4>Recent Progress</h4>
+                            {% if recent_workouts %}
+                                <div class="progress mb-3">
+                                    <div class="progress-bar progress-bar-custom bg-success" 
+                                         role="progressbar" 
+                                         style="width: {{ (recent_workouts|length / 30) * 100 }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ recent_workouts|length }} workouts in the last 30 days
+                                </small>
+                            {% else %}
+                                <p class="text-muted">No recent workouts</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <h4>Personal Records</h4>
+                            {% if personal_records %}
+                                {% for exercise, record in personal_records.items() %}
+                                    <div class="mb-2">
+                                        <strong>{{ exercise|title }}:</strong> 
+                                        {{ record.weight|default('0') }} lbs ({{ record.reps|default('0') }} reps)
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No records yet</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="profile-stats">
+                <h3 class="mb-4">Recent Activity</h3>
+                {% if recent_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Session Name</th>
+                                    <th>Exercises</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in recent_sessions %}
+                                    <tr>
+                                        <td>{{ session.start_time.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('edit_session', session_id=session.session_id) }}">
+                                                {{ session.session_name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ session.exercise_count }} exercises</td>
+                                        <td>{{ session.duration }} minutes</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent activity</p>
+                {% endif %}
+            </div>
         </div>
     </div>
-</main>
+</div>
 {% endblock %}

@@ -9,13 +9,14 @@ class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
-    age = db.Column(db.Integer, nullable=False)
-    weight = db.Column(db.Float, nullable=False)
-    height = db.Column(db.Integer, nullable=False)
-    gender = db.Column(db.String(10), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    age = db.Column(db.Integer)
+    weight = db.Column(db.Float)
+    height = db.Column(db.Float)
+    gender = db.Column(db.String(10))
     workout_sessions = db.relationship('WorkoutSession', backref='user', lazy=True)
+    workout_logs = db.relationship('WorkoutLog', backref='user', lazy=True)
 
 class ExerciseList(db.Model):
     __tablename__ = 'exercise_list'
@@ -63,6 +64,64 @@ class WorkoutLog(db.Model):
     variation = db.Column(db.String(100))
     weight = db.Column(db.Float)  # Weight used in each exercise
 
+    def calculate_1rm(self):
+        """Calculate 1RM based on weight and reps"""
+        if not (4 <= self.reps <= 6):
+            return None
+            
+        # Define upper body exercises
+        upper_body_exercises = {
+            'bench press', 'overhead press', 'push up', 'dumbbell press',
+            'military press', 'incline bench press', 'decline bench press',
+            'shoulder press', 'chest press'
+        }
+        
+        # Check if exercise is upper body
+        is_upper = any(exercise in self.exercise_name.lower() for exercise in upper_body_exercises)
+        
+        if is_upper:
+            # Upper body formula: (4-to-6RM x 1.1307) + 0.6998
+            return (self.weight * 1.1307) + 0.6998
+        else:
+            # Lower body formula: (4-to-6RM x 1.09703) + 14.2546
+            return (self.weight * 1.09703) + 14.2546
+
+    @staticmethod
+    def get_similar_users_1rm(exercise_name, user_weight, user_height, margin=10):
+        """Get 1RM data from users with similar weight and height"""
+        similar_users = User.query.filter(
+            User.weight.between(user_weight - margin, user_weight + margin),
+            User.height.between(user_height - margin, user_height + margin)
+        ).all()
+        
+        user_ids = [user.user_id for user in similar_users]
+        
+        # Get the latest workout logs for the exercise from similar users
+        similar_logs = WorkoutLog.query.filter(
+            WorkoutLog.user_id.in_(user_ids),
+            WorkoutLog.exercise_name.ilike(f'%{exercise_name}%'),
+            WorkoutLog.reps.between(4, 6)  # Only consider 4-6 rep sets
+        ).all()
+        
+        # Calculate 1RMs
+        one_rms = []
+        for log in similar_logs:
+            one_rm = log.calculate_1rm()
+            if one_rm:
+                one_rms.append(one_rm)
+        
+        if one_rms:
+            return {
+                'average': sum(one_rms) / len(one_rms),
+                'max': max(one_rms),
+                'min': min(one_rms)
+            }
+        return None
+
+    def save(self):
+        db.session.add(self)
+        db.session.flush()
+        return self
 
 class WorkoutHistory(db.Model):
     __tablename__ = 'workout_history'

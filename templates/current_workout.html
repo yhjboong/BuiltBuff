@@ -1,250 +1,140 @@
 {% extends "base.html" %}
-{% block title %}Current Workout - BuiltBuff{% endblock %}
+
 {% block content %}
+<div class="container">
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Current Workout</h2>
+        </div>
+        <div class="card-body">
+            <!-- Add Exercise Form -->
+            <form method="POST" action="{{ url_for('add_workout') }}" class="mb-4" id="workout-form">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="exercise_name">Exercise</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="exercise_name" 
+                               name="exercise_name" 
+                               list="exercise-list"
+                               autocomplete="off"
+                               required>
+                        <datalist id="exercise-list"></datalist>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="equipment">Equipment</label>
+                        <select class="form-control" 
+                                id="equipment" 
+                                name="equipment" 
+                                required 
+                                disabled>
+                            <option value="">Select exercise first</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="weight">Weight (lbs)</label>
+                        <input type="number" class="form-control" name="weight" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="reps">Reps (4-6 for 1RM)</label>
+                        <input type="number" class="form-control" name="reps" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="btn btn-primary d-block">Add Exercise</button>
+                    </div>
+                </div>
+            </form>
 
-<main class="main-content">
-    <h1 class="heading-primary">{{ workout_session.session_name }}</h1>
-    <form id="add-workout-form" method="POST">
-        <div class="form-group">
-            <label for="exercise_search">Exercise Name:</label>
-            <input type="text" id="exercise_search" name="exercise_name" class="form-control" autocomplete="off" required>
-            <div id="exercise_suggestions" class="suggestions"></div>
+            <!-- Workout List -->
+            {% if workouts %}
+                {% for workout in workouts %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>{{ workout.exercise_name|title }}</h5>
+                                    <p>Weight: {{ workout.weight }} lbs | Reps: {{ workout.reps }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if workout.reps >= 4 and workout.reps <= 6 %}
+                                        <div class="alert alert-info">
+                                            <strong>Estimated 1RM:</strong> 
+                                            {% if workout.one_rm %}
+                                                {{ "%.1f"|format(workout.one_rm) }} lbs
+                                                <br>
+                                                <small class="text-muted">
+                                                    Based on {{ workout.reps }}-rep set at {{ workout.weight }} lbs
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-warning">
+                                            Do 4-6 reps for 1RM calculation
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No exercises added yet.</p>
+            {% endif %}
         </div>
-        <div class="form-group">
-            <label for="equipment_select">Equipment:</label>
-            <select id="equipment_select" name="equipment" class="form-control" required>
-                <option value="">Select Equipment</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="weight">Weight (lbs):</label>
-            <input type="number" name="weight" id="weight" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label for="reps">Reps:</label>
-            <input type="number" name="reps" id="reps" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Add Workout</button>
-    </form>
-    <button id="end-session-btn" class="btn btn-danger">End Session</button>
+    </div>
 
-    <h2>Your Workouts</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Exercise</th>
-                <th>Equipment</th>
-                <th>Weight</th>
-                <th>Reps</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for workout in workouts %}
-            <tr>
-                <td>{{ workout.exercise_name }}</td>
-                <td>{{ workout.equipment }}</td>
-                <td>{{ workout.weight }} lbs</td>
-                <td>{{ workout.reps }}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary" onclick="showEditForm({{ workout.workout_id }}, '{{ workout.exercise_name }}', '{{ workout.equipment }}', {{ workout.weight }}, {{ workout.reps }})">Edit</button>
-                    <form action="{{ url_for('delete_workout_log', log_id=workout.workout_id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Hidden form to edit workout -->
-    <div id="edit-workout-form" style="display:none;">
-        <form method="POST" action="" id="edit-form">
-            <div class="form-group">
-                <label for="edit_exercise_search">Exercise Name:</label>
-                <input type="text" id="edit_exercise_search" name="exercise_name" class="form-control" autocomplete="off" required>
-                <div id="edit_exercise_suggestions" class="suggestions"></div>
-            </div>
-            <div class="form-group">
-                <label for="edit_equipment_select">Equipment:</label>
-                <select id="edit_equipment_select" name="equipment" class="form-control" required>
-                    <!-- Options will be populated dynamically -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="edit_weight">Weight:</label>
-                <input type="number" name="weight" id="edit_weight" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="edit_reps">Reps:</label>
-                <input type="number" name="reps" id="edit_reps" class="form-control" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Update Workout</button>
-            <button type="button" onclick="hideEditForm()" class="btn btn-secondary">Cancel</button>
+    <!-- End Workout Button -->
+    <div class="text-center">
+        <form action="{{ url_for('end_session') }}" method="POST">
+            <button type="submit" class="btn btn-lg btn-success">End Workout</button>
         </form>
     </div>
-</main>
+</div>
 
 <script>
-// JavaScript for exercise autocomplete and equipment selection
-
-let exerciseInput = document.getElementById('exercise_search');
-let suggestionsDiv = document.getElementById('exercise_suggestions');
-let equipmentSelect = document.getElementById('equipment_select');
-
-exerciseInput.addEventListener('input', function() {
-    let term = exerciseInput.value;
-    if (term.length > 1) {
-        fetch('/search_exercise_names?search_term=' + encodeURIComponent(term))
-            .then(response => response.json())
-            .then(data => {
-                suggestionsDiv.innerHTML = '';
-                // Ensure unique exercise names
-                let uniqueExercises = [];
-                data.results.forEach(function(item) {
-                    if (!uniqueExercises.includes(item.exercise_name)) {
-                        uniqueExercises.push(item.exercise_name);
-                        let suggestion = document.createElement('div');
-                        suggestion.classList.add('suggestion-item');
-                        suggestion.textContent = item.exercise_name;
-                        suggestion.addEventListener('click', function() {
-                            exerciseInput.value = item.exercise_name;
-                            suggestionsDiv.innerHTML = '';
-                            loadEquipmentOptions(item.exercise_name);
-                        });
-                        suggestionsDiv.appendChild(suggestion);
-                    }
+document.addEventListener('DOMContentLoaded', function() {
+    const exerciseInput = document.getElementById('exercise_name');
+    const exerciseList = document.getElementById('exercise-list');
+    const equipmentSelect = document.getElementById('equipment');
+    
+    // Exercise search
+    exerciseInput.addEventListener('input', function() {
+        if (this.value.length >= 2) {  // Start searching after 2 characters
+            fetch(`/search_exercises?search_term=${encodeURIComponent(this.value)}`)
+                .then(response => response.json())
+                .then(data => {
+                    exerciseList.innerHTML = '';  // Clear existing options
+                    data.results.forEach(exercise => {
+                        const option = document.createElement('option');
+                        option.value = exercise.exercise_name;
+                        exerciseList.appendChild(option);
+                    });
                 });
-            });
-    } else {
-        suggestionsDiv.innerHTML = '';
-    }
-});
+        }
+    });
 
-function loadEquipmentOptions(exerciseName) {
-    fetch('/get_equipment_options?exercise_name=' + encodeURIComponent(exerciseName))
-        .then(response => response.json())
-        .then(data => {
-            equipmentSelect.innerHTML = '<option value="">Select Equipment</option>';
-            data.forEach(function(equipment) {
-                let option = document.createElement('option');
-                option.value = equipment;
-                option.textContent = equipment;
-                equipmentSelect.appendChild(option);
-            });
-        });
-}
-
-// Handle form submission for adding a workout
-document.getElementById('add-workout-form').addEventListener('submit', function(e) {
-    let exerciseName = exerciseInput.value;
-    let equipment = equipmentSelect.value;
-    if (!exerciseName || !equipment) {
-        e.preventDefault();
-        alert('Please select an exercise and equipment.');
-    }
-});
-
-function hideEditForm() {
-    document.getElementById('edit-workout-form').style.display = 'none';
-}
-
-document.getElementById('end-session-btn').addEventListener('click', function() {
-    fetch('{{ url_for('end_session') }}', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-    }).then(response => {
-        if (response.ok) {
-            window.location.href = '{{ url_for('history') }}';
+    // Get equipment options when exercise is selected
+    exerciseInput.addEventListener('change', function() {
+        if (this.value) {
+            fetch(`/get_equipment_options?exercise_name=${encodeURIComponent(this.value)}`)
+                .then(response => response.json())
+                .then(data => {
+                    equipmentSelect.innerHTML = '<option value="">Select equipment</option>';
+                    equipmentSelect.disabled = false;
+                    
+                    data.equipment_options.forEach(equipment => {
+                        const option = document.createElement('option');
+                        option.value = equipment;
+                        option.textContent = equipment;
+                        equipmentSelect.appendChild(option);
+                    });
+                });
+        } else {
+            equipmentSelect.innerHTML = '<option value="">Select exercise first</option>';
+            equipmentSelect.disabled = true;
         }
     });
 });
-
-// Functions for the edit form
-let editExerciseInput = document.getElementById('edit_exercise_search');
-let editSuggestionsDiv = document.getElementById('edit_exercise_suggestions');
-let editEquipmentSelect = document.getElementById('edit_equipment_select');
-let editWeightInput = document.getElementById('edit_weight');
-let editRepsInput = document.getElementById('edit_reps');
-
-editExerciseInput.addEventListener('input', function() {
-    let term = editExerciseInput.value;
-    if (term.length > 1) {
-        fetch('/search_exercise_names?search_term=' + encodeURIComponent(term))
-            .then(response => response.json())
-            .then(data => {
-                editSuggestionsDiv.innerHTML = '';
-                // Ensure unique exercise names
-                let uniqueExercises = [];
-                data.results.forEach(function(item) {
-                    if (!uniqueExercises.includes(item.exercise_name)) {
-                        uniqueExercises.push(item.exercise_name);
-                        let suggestion = document.createElement('div');
-                        suggestion.classList.add('suggestion-item');
-                        suggestion.textContent = item.exercise_name;
-                        suggestion.addEventListener('click', function() {
-                            editExerciseInput.value = item.exercise_name;
-                            editSuggestionsDiv.innerHTML = '';
-                            loadEditEquipmentOptions(item.exercise_name);
-                        });
-                        editSuggestionsDiv.appendChild(suggestion);
-                    }
-                });
-            });
-    } else {
-        editSuggestionsDiv.innerHTML = '';
-    }
-});
-
-function loadEditEquipmentOptions(exerciseName, selectedEquipment = '') {
-    fetch('/get_equipment_options?exercise_name=' + encodeURIComponent(exerciseName))
-        .then(response => response.json())
-        .then(data => {
-            editEquipmentSelect.innerHTML = '<option value="">Select Equipment</option>';
-            data.forEach(function(equipment) {
-                let option = document.createElement('option');
-                option.value = equipment;
-                option.textContent = equipment;
-                if (equipment.toLowerCase() === selectedEquipment.toLowerCase()) {
-                    option.selected = true;
-                }
-                editEquipmentSelect.appendChild(option);
-            });
-        });
-}
-
-function showEditForm(workout_id, exercise_name, equipment, weight, reps) {
-    document.getElementById('edit-form').action = '/update_workout_log/' + workout_id;
-    editExerciseInput.value = exercise_name;
-    editWeightInput.value = weight;
-    editRepsInput.value = reps;
-
-    // Load equipment options and set the selected one
-    loadEditEquipmentOptions(exercise_name, equipment);
-
-    document.getElementById('edit-workout-form').style.display = 'block';
-}
 </script>
-
-<style>
-/* Additional styles for suggestions */
-.suggestions {
-    border: 1px solid #ccc;
-    max-height: 150px;
-    overflow-y: auto;
-    position: absolute;
-    background-color: #fff;
-    z-index: 1000;
-    width: calc(100% - 20px);
-}
-
-.suggestion-item {
-    padding: 5px 10px;
-    cursor: pointer;
-}
-
-.suggestion-item:hover {
-    background-color: #f0f0f0;
-}
-</style>
 {% endblock %}
