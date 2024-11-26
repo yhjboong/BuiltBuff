@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from models import db, ExerciseList, WorkoutSession, WorkoutLog, User, WorkoutHistory
 from app import app
 from sqlalchemy.exc import IntegrityError
@@ -48,65 +48,64 @@ def load_exercises_from_csv():
         raise e
 
 def load_workout_sessions_from_csv():
-    # Load the workout sessions CSV file
-    df = pd.read_csv('./data/matthew-eleazar-strong.csv')  # Adjust the path to your CSV file
-
-    workout_logs = []
-    session_mapping = {}
-
-    for _, row in df.iterrows():
-        session_key = row['session_key']
-        # If session_key is new, create a completed WorkoutSession
-        if session_key not in session_mapping:
-            session_date = pd.to_datetime(row['Date'])
-            new_session = WorkoutSession(
-                user_id=1,  # Update as needed for the actual user ID
-                session_name=row['Workout Name'],
-                start_time=session_date,
-                end_time=session_date,  # Temporary, will update after processing all workouts
-                status='completed'
-            )
-            db.session.add(new_session)
-            db.session.flush()  # Get the session_id before commit
-            session_mapping[session_key] = new_session.session_id
-
-        # Add each workout log entry to the list
-        session_id = session_mapping[session_key]
-        exercise_name = row['Exercise Name'].lower()
+    try:
+        print("Starting to load Matthew's workout data...")
+        df = pd.read_csv('./data/matthew-eleazar-strong.csv')
+        print(f"Found {len(df)} workout records in CSV")
         
-        # Handle missing or non-string 'Equipment' values
-        equipment = row['Equipment'] if isinstance(row['Equipment'], str) else 'unknown'
-        equipment = equipment.lower()
-
-        workout_log = WorkoutLog(
-            user_id=1,
-            session_id=session_id,
-            session_workout_number=row['Set Order'],
-            completed_at=pd.to_datetime(row['Date']).date(),
-            intensity_level='medium',  # Replace with actual intensity if available
-            rest_time=row.get('Seconds', 0),
-            reps=row['Reps'],
-            sets=row['Set Order'],
-            exercise_name=exercise_name,
-            equipment=equipment,
-            variation='standard',
-            weight=row.get('Weight', 0)  # Add weight if present
-        )
-        workout_logs.append(workout_log)
-
-    # Batch insert all workout logs
-    db.session.bulk_save_objects(workout_logs)
-    db.session.commit()
-    
-    # Update each session's end time to the latest workout time in the session
-    for session_key, session_id in session_mapping.items():
-        last_workout = WorkoutLog.query.filter_by(session_id=session_id).order_by(WorkoutLog.completed_at.desc()).first()
-        session = WorkoutSession.query.get(session_id)
-        session.end_time = last_workout.completed_at if last_workout else session.start_time
+        # Get the test1@test.com user
+        user = User.query.filter_by(email='test1@test.com').first()
+        if not user:
+            print("Error: test1@test.com user not found! Please run test_data.py first")
+            return
+            
+        print(f"Loading workouts for user ID: {user.user_id}")
+        
+        # Group by session to create workout sessions
+        grouped = df.groupby(['session_key', 'Date', 'Workout Name'])
+        
+        workout_logs = []
+        session_mapping = {}
+        
+        for (session_key, date, workout_name), group in grouped:
+            if session_key not in session_mapping:
+                session_date = pd.to_datetime(date)
+                new_session = WorkoutSession(
+                    user_id=user.user_id,  # Use the actual user ID
+                    session_name=workout_name,
+                    start_time=session_date,
+                    end_time=session_date + timedelta(hours=1),
+                    status='completed'
+                )
+                db.session.add(new_session)
+                db.session.flush()
+                session_mapping[session_key] = new_session.session_id
+                
+            # Add workout logs for this session
+            for _, row in group.iterrows():
+                workout_log = WorkoutLog(
+                    user_id=user.user_id,  # Use the actual user ID
+                    session_id=session_mapping[session_key],
+                    completed_at=pd.to_datetime(row['Date']).date(),
+                    intensity_level='medium',
+                    rest_time=row.get('Seconds', 60),
+                    reps=int(row['Reps']),
+                    sets=1,
+                    exercise_name=row['Exercise Name'].lower(),
+                    equipment=row['Equipment'].lower() if isinstance(row['Equipment'], str) else 'barbell',
+                    variation='standard',
+                    weight=float(row['Weight']) if pd.notna(row['Weight']) else 0
+                )
+                workout_logs.append(workout_log)
+        
+        # Batch insert all workout logs
+        db.session.bulk_save_objects(workout_logs)
         db.session.commit()
-    
-    print("Workout sessions and logs loaded as completed history successfully.")
-
+        print(f"Successfully loaded {len(workout_logs)} workout logs across {len(session_mapping)} sessions")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error loading workout data: {e}")
+        raise
 
 def batch_insert_workout_logs(workout_logs):
     try:

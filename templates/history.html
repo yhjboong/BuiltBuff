@@ -1,77 +1,31 @@
 {% extends "base.html" %}
-{% block title %}History - BuiltBuff{% endblock %}
+
 {% block content %}
-
-<main class="main-content">
-    <h1 class="heading-primary">History</h1>
-    {% set current_month = None %}
+<div class="container mt-4">
+    <h2>History</h2>
     
-    <div class="workout-grid">
-        {% for session in workout_sessions %}
-            {% if session.formatted_date.month_year != current_month %}
-                {% set current_month = session.formatted_date.month_year %}
-                <p class="text-gray">{{ current_month|upper }}</p>
-            {% endif %}
-
-            <div class="workout-card">
-                <div class="card-header">
-                    <a href="{{ url_for('edit_session', session_id=session.session_id) }}" class="btn btn-secondary">Edit Session</a>
-                    <h2 class="heading-secondary">{{ session.session_name }}</h2>
-                    <p class="text-gray">{{ session.formatted_date.day_name }}, {{ session.formatted_date.short_date }}</p>
-                </div>
-                
-                <div class="stats-container">
-                    <div class="stat-item">
-                        <span class="stat-icon"></span>
-                        <span class="stat-value">
-                            {% if session.total_duration %}
-                                {% set duration_parts = session.total_duration.split(':') %}
-                                {{ duration_parts[0] }}h {{ duration_parts[1] }}m
-                            {% else %}
-                                N/A
-                            {% endif %}
-                        </span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-icon"></span>
-                        <span class="stat-value">{{ session.workouts|length }} sets</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-icon"></span>
-                        <span class="stat-value">0 PRs</span>
-                    </div>
-                </div>
-
-                <div class="exercise-container">
-                    <div class="exercise-header">
-                        <h3>Exercise</h3>
-                        <h3>Best Set</h3>
-                    </div>
-                    <div class="exercise-list">
-                        {% set grouped_exercises = {} %}
-                        {% for workout in session.workouts[:5] %}
-                            {% if workout.exercise_name not in grouped_exercises %}
-                                {% set _ = grouped_exercises.update({workout.exercise_name: {'count': 1, 'reps': workout.reps}}) %}
-                            {% else %}
-                                {% set _ = grouped_exercises.update({
-                                    workout.exercise_name: {
-                                        'count': grouped_exercises[workout.exercise_name]['count'] + 1,
-                                        'reps': workout.reps
-                                    }
-                                }) %}
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% for exercise_name, data in grouped_exercises.items() %}
-                            <div class="exercise-item">
-                                <span class="exercise-name">{{ exercise_name|title }}</span>
-                                <span class="exercise-stats">{{ data.count }}×{{ data.reps }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
+    {% for session in workout_sessions %}
+    <div class="workout-session mb-4">
+        <h3>{{ session.name }}</h3>
+        <p>{{ session.date.strftime('%A, %b %d') }}</p>
+        
+        <div class="session-stats">
+            <span>{{ session.duration }}</span>
+            <span>{{ session.total_sets }} sets</span>
+            <span>{{ session.prs }} PRs</span>
+        </div>
+        
+        <div class="exercises mt-3">
+            <h4>Exercise</h4>
+            <h4>Best Set</h4>
+            {% for exercise in session.exercises %}
+            <div class="exercise-row">
+                <span>{{ exercise.name }}</span>
+                <span>{{ exercise.sets }}×{{ exercise.reps }} @ {{ exercise.weight }}lbs</span>
             </div>
-        {% endfor %}
+            {% endfor %}
+        </div>
     </div>
-</main>
+    {% endfor %}
+</div>
 {% endblock %}
