@@ -1,10 +1,47 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask, request, redirect, url_for, render_template, flash, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone, timedelta
-from models import db, User, WorkoutLog, ExerciseList, WorkoutSession
+from models import (
+    db, User, WorkoutLog, ExerciseList, WorkoutSession, 
+    WorkoutHistory, OneRMRecord, UserPreferences
+)
 from sqlalchemy import func
 import os
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from utils.strength_utils import (
+    calculate_age_percentile,
+    calculate_weight_percentile,
+    get_age_category,
+    get_weight_class
+)
+from flask import jsonify
+from flask_migrate import Migrate
+
+def update_exercise_types():
+    try:
+        # Update 'Bench' to 'Bench Press'
+        records = OneRMRecord.query.filter_by(exercise_type='Bench').all()
+        for record in records:
+            record.exercise_type = 'Bench Press'
+        
+        # Update 'Deadlifts' to 'Deadlift' if needed
+        deadlift_records = OneRMRecord.query.filter_by(exercise_type='Deadlifts').all()
+        for record in deadlift_records:
+            record.exercise_type = 'Deadlift'
+        
+        db.session.commit()
+        
+        # Verify changes
+        distinct_exercises = db.session.query(OneRMRecord.exercise_type.distinct()).all()
+        print("Updated exercise types:", [ex[0] for ex in distinct_exercises])
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating records: {str(e)}")
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
@@ -23,12 +60,19 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'bu
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+migrate = Migrate(app, db)
+
+# Move the function call inside app context after everything is initialized
 with app.app_context():
     db.create_all()
+    update_exercise_types()
 
 @app.route('/')
+@app.route('/home')
 def home():
-    return render_template('home.html')
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+    return redirect(url_for('profile'))
 
 @app.route('/signup', methods=['POST', 'GET'])
 def signup():
@@ -766,5 +810,74 @@ def add_workout_to_session(session_id):
     flash('Exercise added successfully!', 'success')
     return redirect(url_for('edit_session', session_id=session_id))
 
+@app.route('/one_rm_tracker', methods=['GET', 'POST'])
+@login_required
+def one_rm_tracker():
+    user = current_user
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            exercise_raw = request.form.get('exercise')
+            # Map the form values to database exercise names
+            exercise_mapping = {
+                'Bench Press': {'name': 'Bench Press', 'equipment': 'Barbell', 'variation': 'No'},
+                'Squat': {'name': 'Squat', 'equipment': 'Barbell', 'variation': 'No'},
+                'Deadlift': {'name': 'Deadlifts', 'equipment': 'Barbell', 'variation': 'No'}
+            }
+            
+            exercise_info = exercise_mapping.get(exercise_raw)
+            if not exercise_info:
+                raise ValueError(f"Invalid exercise type: {exercise_raw}")
+
+            weight = float(request.form.get('weight'))
+            date_recorded = datetime.now()
+
+            # Calculate percentiles using the correct exercise name
+            age_percentile = calculate_age_percentile(exercise_info['name'], weight, user.age, user.gender)
+            weight_percentile = calculate_weight_percentile(exercise_info['name'], weight, user.weight, user.gender)
+
+            new_record = OneRMRecord(
+                user_id=user.user_id,
+                exercise_type=exercise_info['name'],  # Use the mapped exercise name
+                weight=weight,
+                date_recorded=date_recorded,
+                age_percentile=age_percentile,
+                weight_percentile=weight_percentile
+            )
+
+            db.session.add(new_record)
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'record': {
+                    'exercise_type': exercise_info['name'],  # Use the mapped exercise name
+                    'weight': weight,
+                    'date_recorded': date_recorded.strftime('%Y-%m-%d'),
+                    'age_percentile': age_percentile,
+                    'weight_percentile': weight_percentile
+                }
+            })
+        except Exception as e:
+            print(f"Error saving record: {str(e)}")  # Debug log
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+
+    # GET request handling remains the same
+    records = OneRMRecord.query.filter_by(user_id=user.user_id).order_by(OneRMRecord.date_recorded.desc()).all()
+    records_dict = [{
+        'exercise_type': record.exercise_type,
+        'weight': record.weight,
+        'date_recorded': record.date_recorded.strftime('%Y-%m-%d'),
+        'age_percentile': record.age_percentile,
+        'weight_percentile': record.weight_percentile
+    } for record in records]
+
+    return render_template('one_rm_tracker.html',
+                         user=user,
+                         records=records_dict,
+                         age_category=get_age_category(user.age),
+                         weight_class=get_weight_class(user.gender, user.weight))
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
+

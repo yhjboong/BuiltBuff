@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block extra_js %}
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>1RM Progress Tracker</h1>
+    
+    <!-- User Info Section -->
+    <div class="row mb-4">
+        <div class="col">
+            <p><strong>Age Category:</strong> {{ age_category }}</p>
+            <p><strong>Weight Class:</strong> {{ weight_class }}</p>
+            <p><strong>Current Weight:</strong> {{ user.weight }} kg</p>
+            <p><strong>Gender:</strong> {{ user.gender }}</p>
+        </div>
+    </div>
+
+    <!-- Input Form Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Record 1RM</h3>
+                </div>
+                <div class="card-body">
+                    <form id="oneRMForm" method="POST">
+                        <div class="form-group mb-3">
+                            <label for="exercise">Exercise</label>
+                            <select name="exercise" id="exercise" class="form-select" required>
+                                <option value="Squat">Squat</option>
+                                <option value="Bench Press">Bench Press</option>
+                                <option value="Deadlift">Deadlift</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="weight">Weight (kg)</label>
+                            <input type="number" step="0.5" name="weight" id="weight" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Record 1RM</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div id="progressChart" style="width:100%; height:500px; border:1px solid #ddd;"></div>
+        </div>
+    </div>
+
+    <!-- Records Table -->
+    <div class="row mt-4">
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Exercise</th>
+                        <th>Weight (kg)</th>
+                        <th>Age Percentile</th>
+                        <th>Weight Percentile</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record.date_recorded }}</td>
+                        <td>{{ record.exercise_type }}</td>
+                        <td>{{ record.weight }}</td>
+                        <td>{{ record.age_percentile }}</td>
+                        <td>{{ record.weight_percentile }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize the records array with the data from server
+const records = {{ records|tojson|safe if records else '[]' }};
+console.log('Initial records:', records);
+
+function updateChart() {
+    console.log('Updating chart with records:', records);
+    
+    const exerciseTypes = ['Squat', 'Bench Press', 'Deadlifts'];
+    const traces = [];
+
+    exerciseTypes.forEach(exercise => {
+        const exerciseRecords = records.filter(r => r.exercise_type === exercise);
+        console.log(`Records for ${exercise}:`, exerciseRecords);
+        
+        if (exerciseRecords.length > 0) {
+            traces.push({
+                x: exerciseRecords.map(r => r.date_recorded),
+                y: exerciseRecords.map(r => r.weight),
+                name: exercise,
+                type: 'scatter',
+                mode: 'lines+markers',
+                marker: { size: 8 },
+                line: { width: 2 }
+            });
+        }
+    });
+
+    const layout = {
+        title: {
+            text: '1RM Progress Over Time',
+            font: { size: 24 }
+        },
+        xaxis: {
+            title: 'Date',
+            type: 'date',
+            tickformat: '%Y-%m-%d'
+        },
+        yaxis: {
+            title: 'Weight (kg)',
+            rangemode: 'tozero'
+        },
+        showlegend: true,
+        legend: {
+            x: 1,
+            xanchor: 'right',
+            y: 1
+        },
+        margin: { t: 50, r: 50, b: 50, l: 50 },
+        hovermode: 'closest'
+    };
+
+    Plotly.newPlot('progressChart', traces, layout, {responsive: true});
+}
+
+// Initial chart render
+updateChart();
+
+// Form submission handler
+document.getElementById('oneRMForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    console.log('Form submitted');
+    
+    const formData = new FormData(this);
+    console.log('Exercise:', formData.get('exercise'));
+    console.log('Weight:', formData.get('weight'));
+    
+    try {
+        const response = await fetch("{{ url_for('one_rm_tracker') }}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        console.log('Server response:', data);
+        
+        if (data.success) {
+            // Update records array
+            records.unshift(data.record);
+            
+            // Update chart
+            updateChart();
+            
+            // Update table
+            const tbody = document.querySelector('table tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${data.record.date_recorded}</td>
+                <td>${data.record.exercise_type}</td>
+                <td>${data.record.weight}</td>
+                <td>${data.record.age_percentile}</td>
+                <td>${data.record.weight_percentile}</td>
+            `;
+            tbody.insertBefore(newRow, tbody.firstChild);
+            
+            // Reset form
+            this.reset();
+        } else {
+            alert(data.error || 'Failed to save record');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error saving record');
+    }
+});
+</script>
+{% endblock %} 

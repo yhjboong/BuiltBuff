@@ -1,24 +1,80 @@
+==> ./__init__.py <==
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+import os
+from pathlib import Path
+
+# Initialize Flask-SQLAlchemy
+db = SQLAlchemy()
+
+def create_app():
+    app = Flask(__name__,
+                template_folder='../templates',
+                static_folder='../static')
+    
+    # Get the project root directory
+    ROOT_DIR = Path(__file__).parent
+    
+    # Configure database
+    db_path = os.path.join(ROOT_DIR, 'builtbuff.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Initialize extensions
+    db.init_app(app)
+    
+    return app
+
 ==> ./app.py <==
-from flask import Flask, request, redirect, url_for, render_template, session, flash, jsonify
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from flask import Flask, request, redirect, url_for, render_template, flash, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-from models import db, User, WorkoutLog, ExerciseList, WorkoutSession
+from datetime import datetime, timezone, timedelta
+from models import (
+    db, User, WorkoutLog, ExerciseList, WorkoutSession, 
+    WorkoutHistory, OneRMRecord, UserPreferences
+)
 from sqlalchemy import func
 import os
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from utils.strength_utils import (
+    calculate_age_percentile,
+    calculate_weight_percentile,
+    get_age_category,
+    get_weight_class
+)
+from flask import jsonify
+from flask_migrate import Migrate
 
 app = Flask(__name__)
+app.secret_key = 'your-secret-key-here'
+
+# Add Flask-Login initialization
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'builtbuff.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'your_secret_key'
 
 db.init_app(app)
+migrate = Migrate(app, db)
 with app.app_context():
     db.create_all()
 
 @app.route('/')
+@app.route('/home')
 def home():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
     return render_template('home.html')
 
 @app.route('/signup', methods=['POST', 'GET'])
@@ -56,54 +112,83 @@ def signup():
         )
         db.session.add(new_user)
         db.session.commit()
-        session['user_id'] = new_user.user_id
+        print(f"Created new user with ID: {new_user.user_id}")  # Debug print
+        login_user(new_user)
         return redirect(url_for('profile'))
     return render_template('signup.html')
 
 
-@app.route('/login', methods=['POST', 'GET'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
-            session['user_id'] = user.user_id
+            login_user(user)
             return redirect(url_for('profile'))
-        else:
-            flash('Login failed. Check your email and password.')
-            return redirect(url_for('login'))
+        flash('Invalid email or password', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
+@login_required
 def logout():
-    session.pop('user_id', None)
-    flash('You have been logged out successfully.', 'success')
+    logout_user()
     return redirect(url_for('home'))
 
 @app.route('/search_exercises', methods=['GET'])
+@login_required
 def search_exercises():
-    if 'user_id' in session:
-        search_term = request.args.get('search_term', '').lower()
+    search_term = request.args.get('search_term', '').lower()
+    exercises = db.session.query(ExerciseList.name)\
+        .filter(ExerciseList.name.ilike(f'%{search_term}%'))\
+        .distinct()\
+        .all()
+    results = [{'exercise_name': exercise[0].title()} for exercise in exercises]
+    return jsonify({'results': results})
 
-        # Fetch unique exercise names matching the search term
-        if search_term:
-            exercises = db.session.query(ExerciseList.name).filter(
-                ExerciseList.name.ilike(f'%{search_term}%')
-            ).distinct().all()
-        else:
-            exercises = db.session.query(ExerciseList.name).distinct().limit(50).all()
+@app.route('/get_equipment_options', methods=['GET'])
+@login_required
+def get_equipment_options():
+    exercise_name = request.args.get('exercise_name', '').lower()
+    equipment_options = ExerciseList.query.filter_by(
+        name=exercise_name
+    ).with_entities(ExerciseList.equipment).distinct().all()
+    options = [equipment[0].title() for equipment in equipment_options if equipment[0]]
+    return jsonify({'equipment_options': options})
 
-        # Format the response as a list of unique exercise names
-        results = []
-        for exercise_name_tuple in exercises:
-            exercise_name = exercise_name_tuple[0].title()
-            results.append({
-                "exercise_name": exercise_name
-            })
-
-        return jsonify({"results": results}), 200
-    return jsonify({"error": "Unauthorized"}), 401
+@app.route('/add_workout', methods=['POST'])
+def add_workout():
+    if 'user_id' not in session or 'active_session_id' not in session:
+        return redirect(url_for('login'))
+    
+    exercise_name = request.form.get('exercise_name', '').lower()
+    equipment = request.form.get('equipment', '').lower()
+    
+    # Verify the exercise exists in our database
+    exercise = ExerciseList.query.filter_by(
+        name=exercise_name,
+        equipment=equipment
+    ).first()
+    
+    if not exercise:
+        flash('Please select a valid exercise and equipment combination', 'danger')
+        return redirect(url_for('current_workout'))
+    
+    # Create the workout log
+    workout = WorkoutLog(
+        user_id=session['user_id'],
+        session_id=session['active_session_id'],
+        exercise_name=exercise_name,
+        equipment=equipment,
+        weight=request.form.get('weight', type=float),
+        reps=request.form.get('reps', type=int)
+    )
+    
+    db.session.add(workout)
+    db.session.commit()
+    
+    return redirect(url_for('current_workout'))
 
 @app.route('/get_exercises', methods=['GET'])
 def get_exercises():
@@ -207,42 +292,6 @@ def search_exercise_names():
 #     return jsonify({"error": "Unauthorized"}), 401
 
 
-@app.route('/get_equipment_options', methods=['GET'])
-def get_equipment_options():
-    if 'user_id' in session:
-        exercise_name = request.args.get('exercise_name', '').lower()
-        equipment_options = ExerciseList.query.filter_by(name=exercise_name).with_entities(ExerciseList.equipment).distinct()
-        equipment_list = sorted([equipment[0] for equipment in equipment_options])
-        return jsonify(equipment_list)
-    return jsonify({"error": "Unauthorized"}), 401
-
-
-# @app.route('/search_exercises', methods=['GET'])
-# def search_exercises():
-#     if 'user_id' in session:
-#         search_term = request.args.get('search_term', '')
-
-#         # Fetch all exercises if no search term is provided
-#         if search_term:
-#             exercises = ExerciseList.query.filter(ExerciseList.name.contains(search_term)).all()
-#         else:
-#             exercises = ExerciseList.query.all()
-
-#         # Format the response as a list of dictionaries
-#         results = [
-#             {
-#                 "exercise_name": exercise.name,
-#                 "equipment": exercise.equipment,
-#                 "preparation": exercise.description.split("Preparation: ")[1].split("Execution: ")[0].strip(),
-#                 "execution": exercise.description.split("Execution: ")[1].strip()
-#             }
-#             for exercise in exercises
-#         ]
-
-#         return jsonify({"results": results}), 200
-#     return jsonify({"error": "Unauthorized"}), 401
-
-
 @app.route('/recordworkout', methods=['POST'])
 def record_workout():
     if 'user_id' in session:
@@ -305,30 +354,50 @@ def delete_workout(session_id, workout_id):
     return jsonify({"error": "Unauthorized"}), 401
 
 @app.route('/profile')
+@login_required
 def profile():
-    if 'user_id' in session:
-        user = User.query.get(session['user_id'])
-        if not user:
-            flash('User not found.')
-            return redirect(url_for('login'))
-
-        height_in_inches = user.height
-        height_feet = height_in_inches // 12
-        height_inches = height_in_inches % 12
-        session_count = WorkoutSession.query.filter_by(user_id=user.user_id).count()
-        
-        # Use first_name and last_name instead of name
-        user_data = {
-            "name": f"{user.first_name} {user.last_name}",
-            "email": user.email,
-            "age": user.age,
-            "weight": user.weight,
-            "height": f"{height_feet} ft {height_inches} in",
-            "gender": user.gender.capitalize(),
-            "workout_session_count": session_count
-        }
-        return render_template('profile.html', user_data=user_data)
-    return redirect(url_for('login'))
+    # Get user's recent workout sessions
+    recent_sessions = WorkoutSession.query.filter_by(
+        user_id=current_user.user_id,
+        status='completed'
+    ).order_by(WorkoutSession.start_time.desc()).limit(5).all()
+    
+    # Get workout statistics
+    workout_stats = db.session.query(
+        func.count(WorkoutSession.session_id).label('total_workouts'),
+        func.sum(WorkoutLog.sets).label('total_sets'),
+        func.count(WorkoutLog.workout_id).label('total_exercises')
+    ).join(
+        WorkoutLog, 
+        WorkoutLog.session_id == WorkoutSession.session_id
+    ).filter(
+        WorkoutSession.user_id == current_user.user_id,
+        WorkoutSession.status == 'completed'
+    ).first()
+    
+    # Get personal records as a dictionary
+    pr_query = db.session.query(
+        WorkoutLog.exercise_name,
+        func.max(WorkoutLog.weight).label('max_weight'),
+        func.max(WorkoutLog.reps).label('max_reps')
+    ).filter(
+        WorkoutLog.user_id == current_user.user_id
+    ).group_by(
+        WorkoutLog.exercise_name
+    ).all()
+    
+    personal_records = {
+        record.exercise_name: {
+            'weight': record.max_weight,
+            'reps': record.max_reps
+        } for record in pr_query
+    }
+    
+    return render_template('profile.html',
+                         user=current_user,
+                         recent_sessions=recent_sessions,
+                         workout_stats=workout_stats,
+                         personal_records=personal_records)
 
 
 @app.route('/view_workout/<int:session_id>/<int:workout_id>', methods=['GET'])
@@ -373,13 +442,14 @@ def view_session(session_id):
     return jsonify({"error": "Unauthorized"}), 401
 
 @app.route('/startworkout', methods=['GET', 'POST'])
+@login_required
 def startworkout():
-    if 'user_id' not in session:
-        flash('Please log in to start a workout.')
-        return redirect(url_for('login'))
-
     # Check for an existing active session
-    active_session = WorkoutSession.query.filter_by(user_id=session['user_id'], status='active').first()
+    active_session = WorkoutSession.query.filter_by(
+        user_id=current_user.user_id, 
+        status='active'
+    ).first()
+    
     if active_session:
         session['active_session_id'] = active_session.session_id
         flash("A workout session is already in progress.")
@@ -390,7 +460,7 @@ def startworkout():
         
         # Create a new workout session
         new_session = WorkoutSession(
-            user_id=session['user_id'],
+            user_id=current_user.user_id,
             session_name=session_name,
             start_time=datetime.utcnow(),
             status='active'
@@ -403,56 +473,22 @@ def startworkout():
 
     return render_template('startworkout.html')
 
-
-@app.route('/current_workout', methods=['GET', 'POST'])
+@app.route('/current_workout')
+@login_required
 def current_workout():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
     if 'active_session_id' not in session:
-        flash("No active workout session found.", "danger")
         return redirect(url_for('startworkout'))
-
-    session_id = session['active_session_id']
-    workout_session = WorkoutSession.query.filter_by(
-        session_id=session_id, user_id=session['user_id'], status='active'
-    ).first()
-
-    if not workout_session:
-        flash("No active workout session found.")
-        return redirect(url_for('profile'))
-
-    workout_logs = WorkoutLog.query.filter_by(session_id=session_id).all()
-
-    if request.method == 'POST':
-        exercise_name = request.form.get('exercise_name')
-        equipment = request.form.get('equipment')
-        weight = request.form.get('weight')
-        reps = request.form.get('reps')
-        if exercise_name and equipment and weight and reps:
-            # Verify exercise exists with the specified equipment (case-insensitive)
-            exercise = ExerciseList.query.filter(
-                func.lower(ExerciseList.name) == func.lower(exercise_name),
-                func.lower(ExerciseList.equipment) == func.lower(equipment)
-            ).first()
-            if not exercise:
-                flash("Exercise with specified equipment not found. Please select from suggestions.", "danger")
-                return redirect(url_for('current_workout'))
-            new_log = WorkoutLog(
-                user_id=session['user_id'],
-                session_id=session_id,
-                exercise_name=exercise_name,
-                equipment=equipment,
-                weight=weight,
-                reps=reps
-            )
-            db.session.add(new_log)
-            db.session.commit()
-            flash("Workout added successfully!")
-        else:
-            flash("Please fill out all fields.", "danger")
-        return redirect(url_for('current_workout'))
-
-    return render_template('current_workout.html', workout_session=workout_session, workouts=workout_logs)
+        
+    workout_session = WorkoutSession.query.get(session['active_session_id'])
+    workouts = WorkoutLog.query.filter_by(session_id=session['active_session_id']).all()
+    
+    # Calculate 1RM for each workout
+    for workout in workouts:
+        workout.one_rm = workout.calculate_1rm()
+    
+    return render_template('current_workout.html', 
+                         workout_session=workout_session, 
+                         workouts=workouts)
 
 @app.route('/update_workout_log/<int:log_id>', methods=['POST'])
 def update_workout_log(log_id):
@@ -551,6 +587,8 @@ def exercise_names():
 
 @app.route('/exercises')
 def exercises():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
     exercises = ExerciseList.query.all()  # Fetch all exercises initially
     return render_template('exercises.html', exercises=exercises)
 
@@ -568,221 +606,311 @@ def exercises():
 #     ]
 #     return render_template('exercises.html', exercises=formatted_exercises)
 
-@app.route('/add_workout', methods=['POST'])
-def add_workout():
-    if 'user_id' in session:
-        workout_data = request.get_json()
-        session_id = workout_data.get('session_id')
-        exercise_name = workout_data.get('exercise_name')
-        weight = workout_data.get('weight')
-        reps = workout_data.get('reps')
-
-        if not session_id or not exercise_name or not weight or not reps:
-            return jsonify({"error": "session_id, exercise_name, weight, and reps are required"}), 400
-
-        workout_session = WorkoutSession.query.filter_by(
-            session_id=session_id, user_id=session['user_id'], status='active'
-        ).first()
-        
-        if not workout_session:
-            return jsonify({"error": "No active workout session found with the provided session_id"}), 404
-
-        new_workout_log = WorkoutLog(
-            user_id=session['user_id'],
-            session_id=session_id,
-            exercise_name=exercise_name,
-            weight=weight,
-            reps=reps
-        )
-        db.session.add(new_workout_log)
-        db.session.commit()
-        return jsonify({"message": "Workout added successfully"}), 201
-    return jsonify({"error": "Unauthorized"}), 401
-
 @app.route('/end_session', methods=['POST'])
 def end_session():
-    if 'user_id' in session and 'active_session_id' in session:
-        session_id = session.get('active_session_id')
-        workout_session = WorkoutSession.query.filter_by(session_id=session_id, user_id=session['user_id'], status='active').first()
-        if not workout_session:
-            flash("No active workout session found.", "danger")
-            return redirect(url_for('current_workout'))
+    if 'user_id' not in session or 'active_session_id' not in session:
+        return redirect(url_for('login'))
+    session_id = session.get('active_session_id')
+    workout_session = WorkoutSession.query.filter_by(session_id=session_id, user_id=session['user_id'], status='active').first()
+    if not workout_session:
+        flash("No active workout session found.", "danger")
+        return redirect(url_for('current_workout'))
 
-        workout_session.status = 'completed'
-        workout_session.end_time = datetime.utcnow()
-        db.session.commit()
-        session.pop('active_session_id', None)
-        flash("Workout session ended successfully.", "success")
-        return redirect(url_for('history'))
-    flash("You need to be logged in to end a session.", "danger")
-    return redirect(url_for('login'))
-
+    workout_session.status = 'completed'
+    workout_session.end_time = datetime.now(timezone.utc)
+    db.session.commit()
+    session.pop('active_session_id', None)
+    flash("Workout session ended successfully.", "success")
+    return redirect(url_for('history'))
 
 @app.route('/edit_session/<int:session_id>', methods=['GET', 'POST'])
 def edit_session(session_id):
     if 'user_id' not in session:
         flash('Please log in to edit workouts.', 'danger')
         return redirect(url_for('login'))
-    # Fetch the session and workouts
-    workout_session = WorkoutSession.query.filter_by(session_id=session_id, user_id=session['user_id']).first()
-    if not workout_session:
-        flash('Workout session not found.', 'danger')
-        return redirect(url_for('history'))
+    
+    workout_session = WorkoutSession.query.filter_by(
+        session_id=session_id, 
+        user_id=session['user_id']
+    ).first_or_404()
+    
     workouts = WorkoutLog.query.filter_by(session_id=session_id).all()
-    if request.method == 'POST':
-        if 'session_name' in request.form:
-            # Update session name
-            session_name = request.form.get('session_name')
-            if session_name:
-                workout_session.session_name = session_name
-                db.session.commit()
-                flash('Session name updated successfully!', 'success')
-                return redirect(url_for('edit_session', session_id=session_id))
-        else:
-            # Add new workout
-            exercise_name = request.form.get('exercise_name')
-            equipment = request.form.get('equipment')
-            weight = request.form.get('weight')
-            reps = request.form.get('reps')
-            if exercise_name and equipment and weight and reps:
-                # Verify exercise exists with the specified equipment (case-insensitive)
-                exercise = ExerciseList.query.filter(
-                    func.lower(ExerciseList.name) == func.lower(exercise_name),
-                    func.lower(ExerciseList.equipment) == func.lower(equipment)
-                ).first()
-                if not exercise:
-                    flash("Exercise with specified equipment not found. Please select from suggestions.", "danger")
-                    return redirect(url_for('edit_session', session_id=session_id))
-                new_log = WorkoutLog(
-                    user_id=session['user_id'],
-                    session_id=session_id,
-                    exercise_name=exercise_name,
-                    equipment=equipment,
-                    weight=weight,
-                    reps=reps
-                )
-                db.session.add(new_log)
-                db.session.commit()
-                flash("Workout added successfully!", "success")
-            else:
-                flash("Please fill out all fields.", "danger")
-            return redirect(url_for('edit_session', session_id=session_id))
-    return render_template('edit_session.html', session=workout_session, workouts=workouts)
+    
+    # Calculate 1RM for each workout
+    for workout in workouts:
+        workout.one_rm = workout.calculate_1rm()
+    
+    return render_template('edit_session.html', 
+                         workout_session=workout_session, 
+                         workouts=workouts)
 
 
 
-@app.route('/history', methods=['GET'])
+@app.route('/history')
+@login_required
 def history():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    user_id = session['user_id']
-    workout_sessions = WorkoutSession.query.filter_by(user_id=user_id).order_by(WorkoutSession.start_time.desc()).all()
-
-    # Process the workout sessions for display
-    history_data = []
-    for workout_session in workout_sessions:
-        workouts = WorkoutLog.query.filter_by(session_id=workout_session.session_id, user_id=user_id).order_by(WorkoutLog.completed_at, WorkoutLog.exercise_name).all()
+    # Get all completed workout sessions for the user
+    workout_sessions = WorkoutSession.query.filter_by(
+        user_id=current_user.user_id,
+        status='completed'
+    ).order_by(WorkoutSession.start_time.desc()).all()
+    
+    # For each session, get its workout logs
+    session_data = []
+    for session in workout_sessions:
+        workout_logs = WorkoutLog.query.filter_by(
+            session_id=session.session_id
+        ).order_by(WorkoutLog.session_workout_number).all()
         
-        start_time = workout_session.start_time
-        formatted_date = {
-            'month_year': start_time.strftime("%B %Y"),
-            'day_name': start_time.strftime("%A"),
-            'short_date': start_time.strftime("%b %d"),
-            'full_date': start_time.strftime("%Y-%m-%d %H:%M")
-        }
+        # Calculate total sets and PRs
+        total_sets = sum(log.sets for log in workout_logs if log.sets)
         
-        workout_list = [
-            {
-                "exercise_name": workout.exercise_name,
-                "sets": workout.sets,
-                "reps": workout.reps,
-                "weight": workout.weight,
-                "completed_at": workout.completed_at.strftime("%Y-%m-%d") if workout.completed_at else "N/A"
-            }
-            for workout in workouts
-        ]
-
-        history_data.append({
-            "session_id": workout_session.session_id,
-            "session_name": workout_session.session_name,
-            "formatted_date": formatted_date,
-            "workouts": workout_list,
-            "status": workout_session.status,
-            "start_time": start_time.strftime("%Y-%m-%d %H:%M") if start_time else None,
-            "end_time": workout_session.end_time.strftime("%Y-%m-%d %H:%M") if workout_session.end_time else None,
-            "total_duration": str(workout_session.get_total_duration()) if workout_session.end_time else None,
+        # Format workout data
+        exercises = []
+        for log in workout_logs:
+            exercises.append({
+                'name': log.exercise_name.title(),
+                'sets': log.sets,
+                'reps': log.reps,
+                'weight': log.weight
+            })
+        
+        # Calculate duration
+        duration = (session.end_time - session.start_time).total_seconds() / 3600 if session.end_time else 0
+        
+        session_data.append({
+            'id': session.session_id,
+            'name': session.session_name,
+            'date': session.start_time,
+            'duration': f"{int(duration)}h {int((duration % 1) * 60)}m",
+            'total_sets': total_sets,
+            'exercises': exercises,
+            'prs': 0  # You can implement PR detection logic here
         })
-
-    return render_template('history.html', workout_sessions=history_data)
+    
+    return render_template('history.html', workout_sessions=session_data)
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
 def edit_profile():
     if 'user_id' not in session:
-        flash('Please log in to edit your profile.', 'danger')
         return redirect(url_for('login'))
-
-    user = User.query.get(session['user_id'])
+        
+    user = User.query.get_or_404(session['user_id'])
+    
     if request.method == 'POST':
-        # Get updated data from form
-        first_name = request.form.get('first_name', user.first_name)
-        last_name = request.form.get('last_name', user.last_name)
-        age = request.form.get('age', user.age)
-        weight = request.form.get('weight', user.weight)
-        gender = request.form.get('gender', user.gender)
-        height_foot = int(request.form.get('height_foot', user.height // 12))
-        height_inch = int(request.form.get('height_inch', user.height % 12))
-        total_height_in_inches = height_foot * 12 + height_inch
-
-        # Update user data
-        user.first_name = first_name
-        user.last_name = last_name
-        user.age = age
-        user.weight = weight
-        user.gender = gender
-        user.height = total_height_in_inches
-
+        user.first_name = request.form.get('first_name')
+        user.last_name = request.form.get('last_name')
+        user.age = request.form.get('age', type=int)
+        user.weight = request.form.get('weight', type=float)
+        user.height = request.form.get('height', type=float)
+        user.gender = request.form.get('gender')
+        
         db.session.commit()
         flash('Profile updated successfully!', 'success')
         return redirect(url_for('profile'))
+    
+    return render_template('edit_profile.html', 
+                         form_data={
+                             "first_name": user.first_name,
+                             "last_name": user.last_name,
+                             "age": user.age,
+                             "weight": user.weight,
+                             "height": user.height,
+                             "gender": user.gender
+                         })
 
-    # For GET request, render the edit profile page
-    height_foot = user.height // 12
-    height_inch = user.height % 12
-    user_data = {
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "age": user.age,
-        "weight": user.weight,
-        "height_foot": height_foot,
-        "height_inch": height_inch,
-        "gender": user.gender,
-    }
-    return render_template('edit_profile.html', user_data=user_data)
+@app.route('/calculate_1rm/<int:workout_id>', methods=['GET'])
+def calculate_1rm(workout_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+        
+    workout = WorkoutLog.query.get_or_404(workout_id)
+    user = User.query.get(session['user_id'])
+    
+    # Calculate 1RM for current workout
+    one_rm = workout.calculate_1rm()
+    
+    # Get similar users' 1RM data
+    similar_users_data = None
+    if one_rm:
+        similar_users_data = WorkoutLog.get_similar_users_1rm(
+            workout.exercise_name,
+            user.weight,
+            user.height
+        )
+    
+    return jsonify({
+        'current_1rm': round(one_rm, 2) if one_rm else None,
+        'similar_users': similar_users_data
+    })
 
+@app.route('/get_exercise_history', methods=['GET'])
+def get_exercise_history():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+        
+    exercise_name = request.args.get('exercise_name')
+    if not exercise_name:
+        return jsonify({'error': 'Exercise name required'}), 400
+        
+    # Get user's workout history for this exercise
+    workout_logs = WorkoutLog.query.filter_by(
+        user_id=session['user_id'],
+        exercise_name=exercise_name
+    ).order_by(WorkoutLog.completed_at.desc()).all()
+    
+    history = []
+    for log in workout_logs:
+        one_rm = log.calculate_1rm()
+        if one_rm:
+            history.append({
+                'date': log.completed_at.strftime('%Y-%m-%d') if log.completed_at else None,
+                'weight': log.weight,
+                'reps': log.reps,
+                'one_rm': round(one_rm, 2)
+            })
+    
+    return jsonify({'history': history})
+
+@app.route('/add_workout_to_session/<int:session_id>', methods=['POST'])
+def add_workout_to_session(session_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Verify the session belongs to the user
+    workout_session = WorkoutSession.query.filter_by(
+        session_id=session_id,
+        user_id=session['user_id']
+    ).first_or_404()
+    
+    exercise_name = request.form.get('exercise_name', '').lower()
+    equipment = request.form.get('equipment', '').lower()
+    
+    # Verify the exercise exists
+    exercise = ExerciseList.query.filter_by(
+        name=exercise_name,
+        equipment=equipment
+    ).first()
+    
+    if not exercise:
+        flash('Please select a valid exercise and equipment combination', 'danger')
+        return redirect(url_for('edit_session', session_id=session_id))
+    
+    # Create the workout log
+    workout = WorkoutLog(
+        user_id=session['user_id'],
+        session_id=session_id,
+        exercise_name=exercise_name,
+        equipment=equipment,
+        weight=request.form.get('weight', type=float),
+        reps=request.form.get('reps', type=int),
+        completed_at=workout_session.start_time  # Use session start time for consistency
+    )
+    
+    db.session.add(workout)
+    db.session.commit()
+    
+    flash('Exercise added successfully!', 'success')
+    return redirect(url_for('edit_session', session_id=session_id))
+
+@app.route('/one_rm_tracker', methods=['GET', 'POST'])
+@login_required
+def one_rm_tracker():
+    user = current_user
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            exercise_type = request.form.get('exercise')
+            weight = float(request.form.get('weight'))
+            date_recorded = datetime.now()
+            
+            print(f"Received data - Exercise: {exercise_type}, Weight: {weight}")  # Debug log
+
+            age_percentile = calculate_age_percentile(exercise_type, weight, user.age, user.gender)
+            weight_percentile = calculate_weight_percentile(exercise_type, weight, user.weight, user.gender)
+
+            new_record = OneRMRecord(
+                user_id=user.user_id,
+                exercise_type=exercise_type,
+                weight=weight,
+                date_recorded=date_recorded,
+                age_percentile=age_percentile,
+                weight_percentile=weight_percentile
+            )
+
+            db.session.add(new_record)
+            db.session.commit()
+            
+            print(f"Saved record ID: {new_record.record_id}")  # Debug log
+
+            return jsonify({
+                'success': True,
+                'record': {
+                    'exercise_type': exercise_type,
+                    'weight': weight,
+                    'date_recorded': date_recorded.strftime('%Y-%m-%d'),
+                    'age_percentile': age_percentile,
+                    'weight_percentile': weight_percentile
+                }
+            })
+        except Exception as e:
+            print(f"Error saving record: {str(e)}")  # Debug log
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+
+    # GET request handling remains the same
+    records = OneRMRecord.query.filter_by(user_id=user.user_id).order_by(OneRMRecord.date_recorded.desc()).all()
+    records_dict = [{
+        'exercise_type': record.exercise_type,
+        'weight': record.weight,
+        'date_recorded': record.date_recorded.strftime('%Y-%m-%d'),
+        'age_percentile': record.age_percentile,
+        'weight_percentile': record.weight_percentile
+    } for record in records]
+
+    return render_template('one_rm_tracker.html',
+                         user=user,
+                         records=records_dict,
+                         age_category=get_age_category(user.age),
+                         weight_class=get_weight_class(user.gender, user.weight))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', port=5001)
+
 
 ==> ./init_db.py <==
-from app import app, db  # Import app and db from app.py
+from flask import Flask
+from models import db, User, WorkoutLog, ExerciseList, WorkoutSession, WorkoutHistory, OneRMRecord, UserPreferences
 
-# Create tables within the app context
-with app.app_context():
-    db.drop_all()  # Drop all tables
-    db.create_all()  # Recreate tables
-    print("All tables dropped and recreated successfully.")
+def create_app():
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///builtbuff.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
+    return app
+
+if __name__ == '__main__':
+    app = create_app()
+    with app.app_context():
+        db.drop_all()  # Drop all tables
+        db.create_all()  # Recreate tables
+        print("All tables dropped and recreated successfully.")
 ==> ./load_data.py <==
+import sys
+import os
+from pathlib import Path
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from models import db, ExerciseList, WorkoutSession, WorkoutLog, User, WorkoutHistory
 from app import app
-from sqlalchemy.exc import IntegrityError
+
+# Get the project root directory
+ROOT_DIR = Path(__file__).parent
+sys.path.append(str(ROOT_DIR))
 
 def load_exercises_from_csv():
     try:
         # Load exercise CSV file
-        df_exercises = pd.read_csv('./data/gym_exercise_dataset.csv')
+        df_exercises = pd.read_csv(os.path.join(ROOT_DIR, 'data', 'gym_exercise_dataset.csv'))
 
         # Data cleaning for exercises
         df_exercises['Exercise Name'] = df_exercises['Exercise Name'].str.strip().str.lower()
@@ -823,178 +951,113 @@ def load_exercises_from_csv():
         raise e
 
 def load_workout_sessions_from_csv():
-    # Load the workout sessions CSV file
-    df = pd.read_csv('./data/matthew-eleazar-strong.csv')  # Adjust the path to your CSV file
-
-    workout_logs = []
-    session_mapping = {}
-
-    for _, row in df.iterrows():
-        session_key = row['session_key']
-        # If session_key is new, create a completed WorkoutSession
-        if session_key not in session_mapping:
-            session_date = pd.to_datetime(row['Date'])
-            new_session = WorkoutSession(
-                user_id=1,  # Update as needed for the actual user ID
-                session_name=row['Workout Name'],
-                start_time=session_date,
-                end_time=session_date,  # Temporary, will update after processing all workouts
-                status='completed'
-            )
-            db.session.add(new_session)
-            db.session.flush()  # Get the session_id before commit
-            session_mapping[session_key] = new_session.session_id
-
-        # Add each workout log entry to the list
-        session_id = session_mapping[session_key]
-        exercise_name = row['Exercise Name'].lower()
-        
-        # Handle missing or non-string 'Equipment' values
-        equipment = row['Equipment'] if isinstance(row['Equipment'], str) else 'unknown'
-        equipment = equipment.lower()
-
-        workout_log = WorkoutLog(
-            user_id=1,
-            session_id=session_id,
-            session_workout_number=row['Set Order'],
-            completed_at=pd.to_datetime(row['Date']).date(),
-            intensity_level='medium',  # Replace with actual intensity if available
-            rest_time=row.get('Seconds', 0),
-            reps=row['Reps'],
-            sets=row['Set Order'],
-            exercise_name=exercise_name,
-            equipment=equipment,
-            variation='standard',
-            weight=row.get('Weight', 0)  # Add weight if present
-        )
-        workout_logs.append(workout_log)
-
-    # Batch insert all workout logs
-    db.session.bulk_save_objects(workout_logs)
-    db.session.commit()
-    
-    # Update each session's end time to the latest workout time in the session
-    for session_key, session_id in session_mapping.items():
-        last_workout = WorkoutLog.query.filter_by(session_id=session_id).order_by(WorkoutLog.completed_at.desc()).first()
-        session = WorkoutSession.query.get(session_id)
-        session.end_time = last_workout.completed_at if last_workout else session.start_time
-        db.session.commit()
-    
-    print("Workout sessions and logs loaded as completed history successfully.")
-
-
-def batch_insert_workout_logs(workout_logs):
     try:
+        print("Starting to load Matthew's workout data...")
+        df = pd.read_csv(os.path.join(ROOT_DIR, 'data', 'matthew-eleazar-strong.csv'))
+        print(f"Found {len(df)} workout records in CSV")
+        
+        # Get the test1@test.com user
+        user = User.query.filter_by(email='test1@test.com').first()
+        if not user:
+            print("Error: test1@test.com user not found! Please run test_data.py first")
+            return
+            
+        print(f"Loading workouts for user ID: {user.user_id}")
+        
+        # Group by session to create workout sessions
+        grouped = df.groupby(['session_key', 'Date', 'Workout Name'])
+        
+        workout_logs = []
+        session_mapping = {}
+        
+        for (session_key, date, workout_name), group in grouped:
+            if session_key not in session_mapping:
+                session_date = pd.to_datetime(date)
+                new_session = WorkoutSession(
+                    user_id=user.user_id,
+                    session_name=workout_name,
+                    start_time=session_date,
+                    end_time=session_date + timedelta(hours=1),
+                    status='completed'
+                )
+                db.session.add(new_session)
+                db.session.flush()
+                session_mapping[session_key] = new_session.session_id
+                
+            for _, row in group.iterrows():
+                workout_log = WorkoutLog(
+                    user_id=user.user_id,
+                    session_id=session_mapping[session_key],
+                    session_workout_number=row['Set Order'],
+                    completed_at=pd.to_datetime(row['Date']).date(),
+                    intensity_level='medium',
+                    rest_time=row.get('Seconds', 60),
+                    reps=int(row['Reps']),
+                    sets=1,
+                    exercise_name=row['Exercise Name'].lower(),
+                    equipment=row['Equipment'].lower() if isinstance(row['Equipment'], str) else 'barbell',
+                    variation='standard',
+                    weight=float(row['Weight']) if pd.notna(row['Weight']) else 0
+                )
+                workout_logs.append(workout_log)
+        
+        # Batch insert all workout logs
         db.session.bulk_save_objects(workout_logs)
         db.session.commit()
-        print("Workout logs loaded successfully.")
+        
+        # Update session end times
+        for session_key, session_id in session_mapping.items():
+            last_workout = WorkoutLog.query.filter_by(session_id=session_id).order_by(WorkoutLog.completed_at.desc()).first()
+            session = WorkoutSession.query.get(session_id)
+            session.end_time = last_workout.completed_at if last_workout else session.start_time
+            
+        db.session.commit()
+        print(f"Successfully loaded {len(workout_logs)} workout logs across {len(session_mapping)} sessions")
     except Exception as e:
         db.session.rollback()
-        print(f"Error loading workout logs: {e}")
+        print(f"Error loading workout data: {e}")
+        raise
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Ensure tables are created
+        db.create_all()
         load_exercises_from_csv()
         load_workout_sessions_from_csv()
 
-==> ./models.py <==
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
-from sqlalchemy.sql import func
+==> ./test_data.py <==
+from app import app, db
+from models import User, WorkoutSession, WorkoutLog
+from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash
 
-db = SQLAlchemy()
+def create_test_data():
+    with app.app_context():
+        # Clear existing data
+        db.drop_all()
+        db.create_all()
 
-class User(db.Model):
-    __tablename__ = 'users'
-    user_id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(50), nullable=False)
-    last_name = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
-    age = db.Column(db.Integer, nullable=False)
-    weight = db.Column(db.Float, nullable=False)
-    height = db.Column(db.Integer, nullable=False)
-    gender = db.Column(db.String(10), nullable=False)
-    workout_sessions = db.relationship('WorkoutSession', backref='user', lazy=True)
+        # Start from user_id 2 to preserve Matthew's data for user_id 1
+        for i in range(2, 4):  # Create test data for users 2 and 3
+            email = f'test{i}@test.com'
+            if not User.query.filter_by(email=email).first():
+                user = User(
+                    first_name=f'Test User{i}',
+                    last_name='Last',
+                    email=email,
+                    password=generate_password_hash('password'),
+                    age=25,
+                    weight=180.0,
+                    height=70.0,
+                    gender='M'
+                )
+                db.session.add(user)
+                db.session.commit()
 
-class ExerciseList(db.Model):
-    __tablename__ = 'exercise_list'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    equipment = db.Column(db.String(100), nullable=False)
-    variation = db.Column(db.String(100), nullable=True)
-    description = db.Column(db.String(500), nullable=True)
-    __table_args__ = (
-        db.UniqueConstraint('name', 'equipment', 'variation', name='unique_exercise_equipment_variation'),
-    )
+            # Create workout sessions for this user
+            create_test_workouts(user.user_id)
 
-class WorkoutSession(db.Model):
-    __tablename__ = 'workout_sessions'
-    session_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    session_name = db.Column(db.String(100), nullable=False)
-    start_time = db.Column(db.DateTime, default=datetime.utcnow)
-    end_time = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.String(10), default='active')
-    workout_logs = db.relationship('WorkoutLog', backref='session', lazy=True)
-
-    def get_total_duration(self):
-        if self.end_time and self.start_time:
-            total_duration = self.end_time - self.start_time
-            hours, remainder = divmod(total_duration.total_seconds(), 3600)
-            minutes, seconds = divmod(remainder, 60)
-            return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
-        else:
-            return "0:0:0"
-
-class WorkoutLog(db.Model):
-    __tablename__ = 'workout_logs'
-    workout_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
-    session_id = db.Column(db.Integer, db.ForeignKey('workout_sessions.session_id'), nullable=False)
-    session_workout_number = db.Column(db.Integer)  # New field for tracking workout number in the session
-    completed_at = db.Column(db.Date)
-    intensity_level = db.Column(db.String(10))
-    rest_time = db.Column(db.Integer)
-    reps = db.Column(db.Integer)
-    sets = db.Column(db.Integer)
-    exercise_name = db.Column(db.String(100))
-    equipment = db.Column(db.String(100))
-    variation = db.Column(db.String(100))
-    weight = db.Column(db.Float)  # Weight used in each exercise
-
-
-class WorkoutHistory(db.Model):
-    __tablename__ = 'workout_history'
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('workout_sessions.session_id'), primary_key=True)
-    session_name = db.Column(db.String(100), nullable=False)  # Name of the session
-    session_date = db.Column(db.DateTime, nullable=False)  # Date of the session
-    session_duration = db.Column(db.Interval)  # Optional: Duration of the session
-    total_exercises = db.Column(db.Integer)  # Total number of exercises in the session
-    intensity_avg = db.Column(db.Float)  # Optional: Average intensity level if computed
-
-    # Relationships
-    user = db.relationship("User", backref="workout_history")
-    session = db.relationship("WorkoutSession", backref="workout_history")
-
-def update_workout_history(session_id):
-    session = WorkoutSession.query.get(session_id)
-    if session:
-        total_exercises = WorkoutLog.query.filter_by(session_id=session_id).count()
-        
-        avg_intensity = db.session.query(
-            func.avg(
-                func.coalesce(intensity_mapping[WorkoutLog.intensity_level], 2)
-            )
-        ).filter_by(session_id=session_id).scalar()
-        
-        history_entry = WorkoutHistory.query.filter_by(session_id=session_id).first()
-        if not history_entry:
-            history_entry = WorkoutHistory(session_id=session_id, user_id=session.user_id)
-            db.session.add(history_entry)
-        
-        history_entry.total_exercises = total_exercises
-        history_entry.intensity_avg = avg_intensity
         db.session.commit()
+        print("Test data created successfully!")
+
+if __name__ == '__main__':
+    create_test_data() 

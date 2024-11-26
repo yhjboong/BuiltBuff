@@ -3,10 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from sqlalchemy.sql import func
 from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Remove the "from app import db" line and use the db from parent scope
 db = SQLAlchemy()
-
 intensity_mapping = {
     'low': 1,
     'medium': 2,
@@ -168,3 +168,38 @@ def update_workout_history(session_id):
         history_entry.total_exercises = total_exercises
         history_entry.intensity_avg = avg_intensity
         db.session.commit()
+
+class OneRMRecord(db.Model):
+    __tablename__ = 'one_rm_records'
+    
+    record_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    exercise_type = db.Column(db.String(50), nullable=False)
+    weight = db.Column(db.Float, nullable=False)
+    date_recorded = db.Column(db.DateTime, nullable=False)
+    age_percentile = db.Column(db.Float)
+    weight_percentile = db.Column(db.Float)
+
+    def __repr__(self):
+        return f'<OneRMRecord {self.exercise_type} {self.weight}kg>'
+
+class StrengthPercentile(db.Model):
+    __tablename__ = 'strength_percentiles'
+    
+    percentile_id = db.Column(db.Integer, primary_key=True)
+    gender = db.Column(db.String(10), nullable=False)
+    exercise_type = db.Column(db.String(20), nullable=False)
+    age_group = db.Column(db.String(20))
+    weight_class = db.Column(db.Float)
+    percentile = db.Column(db.Integer, nullable=False)
+    strength_value = db.Column(db.Float, nullable=False)
+
+class UserPreferences(db.Model):
+    __tablename__ = 'user_preferences'
+    
+    preference_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    comparison_type = db.Column(db.String(10), default='both')  # 'age', 'weight', or 'both'
+    
+    user = db.relationship('User', backref='preferences')
+
