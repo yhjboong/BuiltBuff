@@ -188,6 +188,7 @@ def setup_database():
             print("Test user created successfully.")
 
         # Load OneRM records
+
         onerm_file_path = os.path.join(ROOT_DIR, 'data', 'onerm_records.json')
         load_onerm_data_from_file(onerm_file_path)
             

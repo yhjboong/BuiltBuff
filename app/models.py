@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from sqlalchemy.sql import func
+from sqlalchemy import func, distinct
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
@@ -29,6 +30,96 @@ class User(db.Model, UserMixin):
 
     def get_id(self):
         return str(self.user_id)
+
+    def get_activity_analytics(self):
+        workout_stats = db.session.query(
+            func.count(distinct(WorkoutSession.session_id)).label('total_sessions'),
+            func.sum(WorkoutLog.sets).label('total_sets'),
+            func.count(distinct(WorkoutLog.exercise_name)).label('unique_exercises'),
+            func.avg(WorkoutLog.weight).label('avg_weight')
+        ).join(
+            WorkoutLog, 
+            WorkoutLog.session_id == WorkoutSession.session_id
+        ).filter(
+            WorkoutSession.user_id == self.user_id,
+            WorkoutSession.status == 'completed'
+        ).first()
+
+        # Get most frequent exercises
+        frequent_exercises = db.session.query(
+            WorkoutLog.exercise_name,
+            func.count(WorkoutLog.exercise_name).label('count')
+        ).filter(
+            WorkoutLog.user_id == self.user_id
+        ).group_by(
+            WorkoutLog.exercise_name
+        ).order_by(
+            func.count(WorkoutLog.exercise_name).desc()
+        ).limit(5).all()
+
+        # Calculate average workout duration
+        duration_query = db.session.query(
+            func.avg(
+                func.strftime('%s', WorkoutSession.end_time) - 
+                func.strftime('%s', WorkoutSession.start_time)
+            )
+        ).filter(
+            WorkoutSession.user_id == self.user_id,
+            WorkoutSession.status == 'completed'
+        ).scalar()
+
+        return {
+            'total_sessions': workout_stats[0] or 0,
+            'total_sets': workout_stats[1] or 0,
+            'unique_exercises': workout_stats[2] or 0,
+            'avg_weight': round(workout_stats[3] or 0, 2),
+            'frequent_exercises': [{'name': ex[0], 'count': ex[1]} for ex in frequent_exercises],
+            'avg_duration_minutes': round((duration_query or 0) / 60, 2)
+        }
+    def get_workout_streaks(self):
+        sessions = WorkoutSession.query.filter_by(
+            user_id=self.user_id,
+            status='completed'
+        ).order_by(WorkoutSession.start_time.desc()).all()
+        
+        if not sessions:
+            return {'current_streak': 0, 'longest_streak': 0, 'badge_level': 'Beginner'}
+        
+        current_streak = 1
+        longest_streak = 1
+        current_date = sessions[0].start_time.date()
+        
+        for i in range(1, len(sessions)):
+            session_date = sessions[i].start_time.date()
+            diff = (current_date - session_date).days
+            
+            if diff == 1:
+                current_streak += 1
+                longest_streak = max(longest_streak, current_streak)
+            elif diff > 1:
+                current_streak = 1
+            
+            current_date = session_date
+        
+        # Determine badge level
+        badge_level = 'Beginner'
+        if longest_streak >= 30:
+            badge_level = 'Diamond'
+        elif longest_streak >= 20:
+            badge_level = 'Platinum'
+        elif longest_streak >= 14:
+            badge_level = 'Gold'
+        elif longest_streak >= 7:
+            badge_level = 'Silver'
+        elif longest_streak >= 3:
+            badge_level = 'Bronze'
+        
+        return {
+            'current_streak': current_streak,
+            'longest_streak': longest_streak,
+            'badge_level': badge_level
+        }
+    
 
 class ExerciseList(db.Model):
     __tablename__ = 'exercise_list'

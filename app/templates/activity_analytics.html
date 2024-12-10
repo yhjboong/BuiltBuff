@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Workout Analytics</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Overall Stats</h5>
+                    <p>Total Sessions: {{ analytics.total_sessions }}</p>
+                    <p>Total Sets: {{ analytics.total_sets }}</p>
+                    <p>Unique Exercises: {{ analytics.unique_exercises }}</p>
+                    <p>Average Weight: {{ analytics.avg_weight }} lbs</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Workout Frequency</h5>
+                    <p>Last 30 Days: {{ analytics.monthly_frequency }} workouts</p>
+                    <p>Weekly Average: {{ analytics.weekly_average }} workouts</p>
+                    <p>Average Duration: {{ analytics.avg_duration_minutes }} minutes</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Most Frequent Exercises</h5>
+                    <ul class="list-unstyled">
+                    {% for exercise in analytics.frequent_exercises %}
+                        <li>{{ exercise.name }}: {{ exercise.count }} times</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
