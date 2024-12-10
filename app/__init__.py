@@ -31,6 +31,8 @@ def create_app():
         from app import models  # Lazy import to prevent circular imports
         db.create_all()
 
+    print(app.config['SQLALCHEMY_DATABASE_URI'])
+    
     return app
 
 @login_manager.user_loader

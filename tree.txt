@@ -16,25 +16,249 @@
 │   │   ├── models.cpython-311.pyc
 │   │   ├── routes.cpython-311.pyc
 │   │   └── utils.cpython-311.pyc
+│   ├── code.txt
 │   ├── models.py
 │   ├── routes.py
+│   ├── static
+│   │   ├── css
+│   │   │   ├── index.css
+│   │   │   └── style.css
+│   │   ├── js
+│   │   │   └── plotly.js-3.0.0-rc.1
+│   │   │       ├── BUILDING.md
+│   │   │       ├── CHANGELOG.md
+│   │   │       ├── CITATION.cff
+│   │   │       ├── CONTRIBUTING.md
+│   │   │       ├── CUSTOM_BUNDLE.md
+│   │   │       ├── LICENSE
+│   │   │       ├── README.md
+│   │   │       ├── SECURITY.md
+│   │   │       ├── appveyor.yml
+│   │   │       ├── biome.json
+│   │   │       ├── bower.json
+│   │   │       ├── build
+│   │   │       │   ├── README.md
+│   │   │       │   └── plotcss.js
+│   │   │       ├── code_of_conduct.md
+│   │   │       ├── composer.json
+│   │   │       ├── devtools
+│   │   │       │   ├── regl_codegen
+│   │   │       │   │   ├── devtools.js
+│   │   │       │   │   ├── index.html
+│   │   │       │   │   └── server.mjs
+│   │   │       │   └── test_dashboard
+│   │   │       │       ├── devtools.js
+│   │   │       │       ├── index-mathjax3.html
+│   │   │       │       ├── index-mathjax3chtml.html
+│   │   │       │       ├── index-strict.html
+│   │   │       │       ├── index.html
+│   │   │       │       ├── perf.js
+│   │   │       │       ├── server.mjs
+│   │   │       │       └── style.css
+│   │   │       ├── dist
+│   │   │       │   ├── README.md
+│   │   │       │   ├── plot-schema.json
+│   │   │       │   ├── plotly-basic.js
+│   │   │       │   ├── plotly-basic.min.js
+│   │   │       │   ├── plotly-cartesian.js
+│   │   │       │   ├── plotly-cartesian.min.js
+│   │   │       │   ├── plotly-finance.js
+│   │   │       │   ├── plotly-finance.min.js
+│   │   │       │   ├── plotly-geo-assets.js
+│   │   │       │   ├── plotly-geo.js
+│   │   │       │   ├── plotly-geo.min.js
+│   │   │       │   ├── plotly-gl2d.js
+│   │   │       │   ├── plotly-gl2d.min.js
+│   │   │       │   ├── plotly-gl3d.js
+│   │   │       │   ├── plotly-gl3d.min.js
+│   │   │       │   ├── plotly-locale-af.js
+│   │   │       │   ├── plotly-locale-am.js
+│   │   │       │   ├── plotly-locale-ar-dz.js
+│   │   │       │   ├── plotly-locale-ar-eg.js
+│   │   │       │   ├── plotly-locale-ar.js
+│   │   │       │   ├── plotly-locale-az.js
+│   │   │       │   ├── plotly-locale-bg.js
+│   │   │       │   ├── plotly-locale-bs.js
+│   │   │       │   ├── plotly-locale-ca.js
+│   │   │       │   ├── plotly-locale-cs.js
+│   │   │       │   ├── plotly-locale-cy.js
+│   │   │       │   ├── plotly-locale-da.js
+│   │   │       │   ├── plotly-locale-de-ch.js
+│   │   │       │   ├── plotly-locale-de.js
+│   │   │       │   ├── plotly-locale-el.js
+│   │   │       │   ├── plotly-locale-eo.js
+│   │   │       │   ├── plotly-locale-es-ar.js
+│   │   │       │   ├── plotly-locale-es-pe.js
+│   │   │       │   ├── plotly-locale-es.js
+│   │   │       │   ├── plotly-locale-et.js
+│   │   │       │   ├── plotly-locale-eu.js
+│   │   │       │   ├── plotly-locale-fa.js
+│   │   │       │   ├── plotly-locale-fi.js
+│   │   │       │   ├── plotly-locale-fo.js
+│   │   │       │   ├── plotly-locale-fr-ch.js
+│   │   │       │   ├── plotly-locale-fr.js
+│   │   │       │   ├── plotly-locale-gl.js
+│   │   │       │   ├── plotly-locale-gu.js
+│   │   │       │   ├── plotly-locale-he.js
+│   │   │       │   ├── plotly-locale-hi-in.js
+│   │   │       │   ├── plotly-locale-hr.js
+│   │   │       │   ├── plotly-locale-hu.js
+│   │   │       │   ├── plotly-locale-hy.js
+│   │   │       │   ├── plotly-locale-id.js
+│   │   │       │   ├── plotly-locale-is.js
+│   │   │       │   ├── plotly-locale-it.js
+│   │   │       │   ├── plotly-locale-ja.js
+│   │   │       │   ├── plotly-locale-ka.js
+│   │   │       │   ├── plotly-locale-km.js
+│   │   │       │   ├── plotly-locale-ko.js
+│   │   │       │   ├── plotly-locale-lt.js
+│   │   │       │   ├── plotly-locale-lv.js
+│   │   │       │   ├── plotly-locale-me-me.js
+│   │   │       │   ├── plotly-locale-me.js
+│   │   │       │   ├── plotly-locale-mk.js
+│   │   │       │   ├── plotly-locale-ml.js
+│   │   │       │   ├── plotly-locale-ms.js
+│   │   │       │   ├── plotly-locale-mt.js
+│   │   │       │   ├── plotly-locale-nl-be.js
+│   │   │       │   ├── plotly-locale-nl.js
+│   │   │       │   ├── plotly-locale-no.js
+│   │   │       │   ├── plotly-locale-pa.js
+│   │   │       │   ├── plotly-locale-pl.js
+│   │   │       │   ├── plotly-locale-pt-br.js
+│   │   │       │   ├── plotly-locale-pt-pt.js
+│   │   │       │   ├── plotly-locale-rm.js
+│   │   │       │   ├── plotly-locale-ro.js
+│   │   │       │   ├── plotly-locale-ru.js
+│   │   │       │   ├── plotly-locale-si.js
+│   │   │       │   ├── plotly-locale-sk.js
+│   │   │       │   ├── plotly-locale-sl.js
+│   │   │       │   ├── plotly-locale-sq.js
+│   │   │       │   ├── plotly-locale-sr-sr.js
+│   │   │       │   ├── plotly-locale-sr.js
+│   │   │       │   ├── plotly-locale-sv.js
+│   │   │       │   ├── plotly-locale-sw.js
+│   │   │       │   ├── plotly-locale-ta.js
+│   │   │       │   ├── plotly-locale-th.js
+│   │   │       │   ├── plotly-locale-tr.js
+│   │   │       │   ├── plotly-locale-tt.js
+│   │   │       │   ├── plotly-locale-uk.js
+│   │   │       │   ├── plotly-locale-ur.js
+│   │   │       │   ├── plotly-locale-vi.js
+│   │   │       │   ├── plotly-locale-zh-cn.js
+│   │   │       │   ├── plotly-locale-zh-hk.js
+│   │   │       │   ├── plotly-locale-zh-tw.js
+│   │   │       │   ├── plotly-mapbox.js
+│   │   │       │   ├── plotly-mapbox.min.js
+│   │   │       │   ├── plotly-strict.js
+│   │   │       │   ├── plotly-strict.min.js
+│   │   │       │   ├── plotly-with-meta.js
+│   │   │       │   ├── plotly.js
+│   │   │       │   ├── plotly.min.js
+│   │   │       │   ├── topojson
+│   │   │       │   │   ├── africa_110m.json
+│   │   │       │   │   ├── africa_50m.json
+│   │   │       │   │   ├── asia_110m.json
+│   │   │       │   │   ├── asia_50m.json
+│   │   │       │   │   ├── europe_110m.json
+│   │   │       │   │   ├── europe_50m.json
+│   │   │       │   │   ├── north-america_110m.json
+│   │   │       │   │   ├── north-america_50m.json
+│   │   │       │   │   ├── south-america_110m.json
+│   │   │       │   │   ├── south-america_50m.json
+│   │   │       │   │   ├── usa_110m.json
+│   │   │       │   │   ├── usa_50m.json
+│   │   │       │   │   ├── world_110m.json
+│   │   │       │   │   └── world_50m.json
+│   │   │       │   └── translation-keys.txt
+│   │   │       ├── draftlogs
+│   │   │       │   └── README.md
+│   │   │       ├── esbuild-config.js
+│   │   │       ├── lib
+│   │   │       │   ├── bar.js
+│   │   │       │   ├── barpolar.js
+│   │   │       │   ├── box.js
+│   │   │       │   ├── calendars.js
+│   │   │       │   ├── candlestick.js
+│   │   │       │   ├── carpet.js
+│   │   │       │   ├── choropleth.js
+│   │   │       │   ├── choroplethmap.js
+│   │   │       │   ├── choroplethmapbox.js
+│   │   │       │   ├── cone.js
+│   │   │       │   ├── contour.js
+│   │   │       │   ├── contourcarpet.js
+│   │   │       │   ├── core.js
+│   │   │       │   ├── densitymap.js
+│   │   │       │   ├── densitymapbox.js
+│   │   │       │   ├── funnel.js
+│   │   │       │   ├── funnelarea.js
+│   │   │       │   ├── heatmap.js
+│   │   │       │   ├── histogram.js
+│   │   │       │   ├── histogram2d.js
+│   │   │       │   ├── histogram2dcontour.js
+│   │   │       │   ├── icicle.js
+│   │   │       │   ├── image.js
+│   │   │       │   ├── index-basic.js
+│   │   │       │   ├── index-cartesian.js
+│   │   │       │   ├── index-finance.js
+│   │   │       │   ├── index-geo.js
+│   │   │       │   ├── index-gl2d.js
+│   │   │       │   ├── index-gl3d.js
+│   │   │       │   ├── index-map.js
+│   │   │       │   ├── index-mapbox.js
+│   │   │       │   ├── index-strict.js
+│   │   │       │   ├── index.js
+│   │   │       │   ├── indicator.js
+│   │   │       │   ├── isosurface.js
+│   │   └── png
+│   │       ├── add-orange.png
+│   │       ├── add.png
+│   │       ├── buffbuffalo.png
+│   │       ├── bufffffffalo.png
+│   │       ├── bx-calendar.png
+│   │       ├── bx-trophy.png
+│   │       ├── bxs-time-five.png
+│   │       ├── bxs-user-orange.png
+│   │       ├── bxs-user.png
+│   │       ├── calendar-orange.png
+│   │       ├── dumbbell-orange.png
+│   │       └── dumbbell.png
+│   ├── templates
+│   │   ├── analysis.html
+│   │   ├── auth
+│   │   ├── base.html
+│   │   ├── code.txt
+│   │   ├── current_workout.html
+│   │   ├── edit_profile.html
+│   │   ├── edit_session.html
+│   │   ├── exercise_rows.html
+│   │   ├── exercises.html
+│   │   ├── history.html
+│   │   ├── home.html
+│   │   ├── index.css
+│   │   ├── login.html
+│   │   ├── one_rm_tracker.html
+│   │   ├── profile
+│   │   ├── profile.html
+│   │   ├── recommendations.html
+│   │   ├── recordworkout.html
+│   │   ├── signup.html
+│   │   ├── startworkout.html
+│   │   └── workout
 │   └── utils
 │       ├── __init__.py
 │       ├── __pycache__
 │       │   ├── __init__.cpython-311.pyc
 │       │   └── utils.cpython-311.pyc
 │       └── utils.py
-├── app.py
-├── builtbuff.db
-├── builtbuff_backup.db
 ├── code.txt
 ├── data
 │   ├── big_three_data
 │   │   ├── Sex_Age_Bigthree.csv
+│   │   ├── Sex_Age_Bigthree.txt
 │   │   ├── Sex_Age_Bigthree.xlsx
 │   │   ├── Sex_Weight_Bigthree.csv
+│   │   ├── Sex_Weight_Bigthree.txt
 │   │   └── Sex_Weight_Bigthree.xlsx
-│   ├── builtbuff.db
 │   ├── gym_exercise_dataset.csv
 │   ├── gym_exercise_dataset.numbers
 │   ├── gym_members_exercise_tracking.csv
@@ -46,11 +270,8 @@
 │   ├── stretch_exercise_dataset.csv
 │   ├── strong-2018.csv
 │   └── updated_matthew_eleazar_exercises.csv
-├── filename.txt
-├── init_db.py
 ├── instance
 │   └── builtbuff.db
-├── load_data.py
 ├── migrations
 │   └── add_registered_date.py
 ├── requirements.txt
@@ -73,29 +294,7 @@
 │   ├── index.css
 │   └── templates
 │       └── analysis.html
-├── templates
-│   ├── auth
-│   ├── base.html
-│   ├── code.txt
-│   ├── current_workout.html
-│   ├── edit_profile.html
-│   ├── edit_session.html
-│   ├── exercise_rows.html
-│   ├── exercises
-│   ├── exercises.html
-│   ├── history.html
-│   ├── home.html
-│   ├── index.css
-│   ├── login.html
-│   ├── one_rm_tracker.html
-│   ├── profile
-│   ├── profile.html
-│   ├── recommendations.html
-│   ├── recordworkout.html
-│   ├── signup.html
-│   ├── startworkout.html
-│   └── workout
 ├── test_data.py
 └── tree.txt
 
-18 directories, 81 files
+139 directories, 4060 files

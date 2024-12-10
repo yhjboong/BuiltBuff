@@ -1,0 +1,857 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #F2F2F2;
+    min-height: 100vh;
+}
+
+/* Navigation Bar */
+.navbar {
+    background: #312F2F;
+    height: 101px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 37px;
+}
+
+.navbar-logo {
+    width: 79px;
+    height: 79px;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 40px;
+    margin-left: auto;
+}
+
+.nav-item {
+    color: #BDBBBB;
+    text-align: center;
+}
+
+.nav-item.active {
+    color: #FB892B;
+}
+
+/* Card Layouts */
+.card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+}
+
+.signup-card {
+    background: white;
+    width: 460px;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    margin: 40px auto;
+}
+
+/* Typography */
+.brand {
+    color: #FB892B;
+    font-size: 36px;
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.title {
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #666;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #DDD;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+select.form-control {
+    background-color: white;
+    cursor: pointer;
+}
+
+/* Radio Buttons */
+.gender-group {
+    display: flex;
+    gap: 100px;
+    margin-bottom: 16px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #54AE4D;
+    color: white;
+}
+
+.btn-secondary {
+    background: #FB892B;
+    color: white;
+}
+
+.signup-button {
+    width: 100%;
+    padding: 16px;
+    background: #54AE4D;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 16px 0;
+    cursor: pointer;
+}
+
+/* Links */
+.login-text {
+    text-align: center;
+    color: #333;
+}
+
+.login-link {
+    color: #FB892B;
+    text-decoration: none;
+}
+
+/* Content Layouts */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 101px); /* Accounts for navbar */
+}
+
+/* Workout History Cards */
+.workout-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.workout-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.workout-stats {
+    display: flex;
+    gap: 20px;
+    margin: 15px 0;
+}
+
+/* Exercise Lists */
+.exercise-list {
+    margin: 20px 0;
+}
+
+.exercise-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #EEE;
+}
+
+/* Profile Section */
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.profile-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: #DDD;
+}
+
+/* Progress Charts */
+.chart-container {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Status Indicators */
+.status-completed {
+    background: #CBFFC7;
+}
+
+.status-pending {
+    background: #FFE1C8;
+}
+
+/* Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .signup-card {
+        width: 90%;
+        margin: 20px auto;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .gender-group {
+        gap: 40px;
+    }
+
+    .navbar {
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        padding: 20px;
+    }
+
+    .workout-stats {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+/* Signup Page Specific */
+.signup-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.signup-card {
+    width: 460px;
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #DDD;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+/* History Page Specific */
+/* Update these styles in your CSS file or add them if they don't exist */
+
+/* History Page Specific */
+.workout-grid {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;  /* Reduced gap between cards */
+}
+
+.text-gray {
+    color: #666;
+    font-weight: 500;
+    margin: 15px 0 5px 0;  /* Adjust month header spacing */
+}
+
+.workout-card {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    padding: 8px;  /* Reduced padding */
+    margin-bottom: 8px;  /* Reduced margin */
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 550px;  /* Optional: set a max height */
+    overflow: hidden;    /* Optional: hide overflow if content exceeds */
+}
+
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.workout-details {
+    margin-top: 10px;     /* Reduced from 1rem */
+    padding-top: 10px;    /* Reduced from 1rem */
+}
+
+.exercise-item {
+    padding: 8px;         /* Reduced from 10px */
+    border-bottom: 1px solid #eee;
+}
+
+/* Make action buttons more compact */
+.action-buttons {
+    display: flex;
+    gap: 4px;            /* Reduced from 0.5rem */
+}
+
+.edit-workout-btn,
+.delete-workout-btn {
+    padding: 4px 8px;    /* More compact buttons */
+}
+
+/* Card header adjustments */
+.heading-secondary {
+    font-size: 1.1rem;   /* Slightly smaller title */
+    margin: 0;
+}
+
+.card-header {
+    margin-bottom: 10px; /* Reduced spacing */
+}
+
+/* Remove any extra margins from last elements */
+.exercise-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.workout-card:last-child {
+    margin-bottom: 0;
+}
+
+/* Profile Page Specific */
+.profile-card {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.profile-image {
+    width: 117px;
+    height: 117px;
+    border-radius: 50%;
+    background: #D9D9D9;
+}
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+/* Workout Page Specific */
+.workout-container {
+    max-width: 743px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.workout-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.set-grid {
+    display: grid;
+    grid-template-columns: 60px 150px 100px 100px 60px;
+    gap: 10px;
+}
+
+.set-row {
+    padding: 10px;
+    align-items: center;
+}
+
+/* Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+
+/* Container */
+.container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: #F0F0F0;
+}
+
+/* Brand Elements */
+.brand-text {
+    position: absolute;
+    left: 89px;
+    top: 434px;
+}
+
+.brand {
+    color: #FB892B;
+    font-size: 64px;
+    font-family: 'NCL Monster Beast', sans-serif;
+    font-weight: 400;
+    margin-bottom: 20px;
+}
+
+.tagline {
+    color: black;
+    font-size: 20px;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 400;
+}
+
+/* Auth Card */
+.auth-card {
+    width: 619px;
+    height: 605px;
+    position: absolute;
+    left: 720px;
+    top: 242px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25);
+    padding: 40px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    width: 450px;
+    margin: 0 auto;
+}
+
+.form-control {
+    width: 100%;
+    height: 66px;
+    border-radius: 5px;
+    border: 1px solid #8F8D8D;
+    font-size: 24px;
+    font-family: 'Roboto', sans-serif;
+    padding-left: 19px;
+}
+
+/* Record Workout Specific */
+.workout-card {
+    width: 743px;
+    height: 982px;
+    margin: 150px auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25);
+    padding: 30px;
+}
+
+.workout-header {
+    position: relative;
+    margin-bottom: 40px;
+}
+
+.workout-title {
+    font-size: 40px;
+    color: black;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.timer {
+    color: #626262;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.notes {
+    color: #8F8D8D;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.set-columns {
+    display: grid;
+    grid-template-columns: 60px 150px 100px 100px 60px;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.column-headers {
+    display: grid;
+    grid-template-columns: subgrid;
+    gap: 10px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.set-row {
+    display: grid;
+    grid-template-columns: subgrid;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.set-row.completed {
+    background: #CBFFC7;
+}
+
+/* Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+
+.exercises-container {
+    width: 100%;
+    min-height: 100vh;
+    padding-bottom: 57px;
+    background: #F0F0F0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding-top: 101px; /* Account for fixed navbar */
+}
+
+.exercises-card {
+    width: 828px;
+    height: 838px;
+    background: white;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25);
+    border-radius: 20px;
+}
+
+/* Navigation Specific Styles */
+.nav-menu {
+    width: 587px;
+    height: 78px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+}
+
+.nav-icon {
+    width: 50px;
+    height: 50px;
+    position: relative;
+    margin-bottom: 5px;
+}
+
+.nav-icon-inner {
+    width: 37.50px;
+    height: 39.58px;
+    background: #BDBBBB;
+}
+
+.nav-item.active .nav-icon-inner {
+    background: #FB892B;
+}
+
+.nav-item.active .nav-label {
+    color: #FB892B;
+}
+
+.history-icon {
+    width: 42.75px;
+    height: 47.50px;
+}
+
+.history-icon-bottom {
+    width: 23.75px;
+    height: 14.25px;
+    margin-top: -2px;
+}
+
+.nav-label {
+    color: #BDBBBB;
+    font-size: 12px;
+    font-family: 'NCL Monster Beast', sans-serif;
+    font-weight: 400;
+}
+
+/* Layout Helper Classes */
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+/* Responsive Design */
+@media (max-width: 1440px) {
+    .exercises-card {
+        width: 90%;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-menu {
+        width: 100%;
+        padding: 0 20px;
+    }
+}
+
+/* Landing Page Specific Styles */
+.landing-page {
+    background: linear-gradient(135deg, #1a1c20 0%, #2d3436 100%);
+    color: white;
+    min-height: 100vh;
+}
+
+/* Landing Page Navigation */
+.landing-nav {
+    padding: 1rem 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: auto;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: linear-gradient(45deg, #FB892B, #FB892B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-family: 'NCL Monster Beast', sans-serif;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Hero Section */
+.hero-container {
+    display: flex;
+    min-height: calc(100vh - 70px);
+    margin-top: 70px;
+}
+
+.hero-content {
+    flex: 1;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+    color: white;
+}
+
+.hero-description {
+    font-size: 1.2rem;
+    color: #dfe6e9;
+    margin-bottom: 2rem;
+    max-width: 600px;
+}
+
+/* Features Grid */
+.features-grid {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-radius: 10px;
+    flex: 1;
+}
+
+.feature-title {
+    color: #FB892B;
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.feature-text {
+    color: #dfe6e9;
+    line-height: 1.5;
+}
+
+/* Buttons */
+.btn-outline {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-large {
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+/* Hover Effects */
+.btn:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    transition: transform 0.3s;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-content {
+        padding: 2rem;
+    }
+
+    .features-grid {
+        flex-direction: column;
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .cta-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .btn-large {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-content > * {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.hero-title { animation-delay: 0.2s; }
+.hero-description { animation-delay: 0.4s; }
+.features-grid { animation-delay: 0.6s; }
+.cta-buttons { animation-delay: 0.8s; }

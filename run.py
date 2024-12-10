@@ -3,9 +3,10 @@ import os
 from pathlib import Path
 import pandas as pd
 from datetime import timedelta, datetime
-from app.models import ExerciseList, WorkoutSession, WorkoutLog, User
+from app.models import ExerciseList, WorkoutSession, WorkoutLog, User, OneRMRecord
 from app.utils.utils import load_age_percentile_data, load_weight_percentile_data
 from werkzeug.security import generate_password_hash
+import json
 
 ROOT_DIR = Path(__file__).parent
 
@@ -125,6 +126,37 @@ def load_workout_sessions_from_csv():
         db.session.rollback()
         print(f"Error loading workout data: {e}")
         raise
+    
+def load_onerm_data_from_file(file_path):
+    """
+    Loads OneRM data from a JSON file into the database.
+    """
+    try:
+        print(f"Loading OneRM data from {file_path}...")
+        with open(file_path, 'r') as f:
+            records = json.load(f)
+
+        # Insert records into the database
+        onerm_objects = []
+        for record in records:
+            onerm = OneRMRecord(
+                user_id=record['user_id'],
+                exercise_type=record['exercise_type'],
+                weight=record['weight'],
+                date_recorded=datetime.strptime(record['date_recorded'], '%Y-%m-%d'),
+                age_percentile=record['age_percentile'],
+                weight_percentile=record['weight_percentile']
+            )
+            onerm_objects.append(onerm)
+
+        db.session.bulk_save_objects(onerm_objects)
+        db.session.commit()
+        print(f"Successfully loaded {len(onerm_objects)} OneRM records.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error loading OneRM data: {e}")
+        raise
+    
 
 def setup_database():
     """
@@ -135,7 +167,8 @@ def setup_database():
         db.drop_all()
         db.create_all()
         print("Database tables created successfully.")
-        
+
+        # Create test user if not already present
         test_user = User.query.filter_by(email="test1@test.com").first()
         if not test_user:
             print("Creating test user 'test1@test.com'...")
@@ -153,10 +186,17 @@ def setup_database():
             db.session.commit()
             print("Test user created successfully.")
 
+        # Load OneRM records
+        onerm_file_path = os.path.join(ROOT_DIR, 'data', 'onerm_records.json')
+        load_onerm_data_from_file(onerm_file_path)
+            
         load_exercises_from_csv()
         load_workout_sessions_from_csv()
-        load_age_percentile_data(os.path.join(ROOT_DIR, 'data', 'big_three_data', 'Sex_Age_Bigthree.csv'))
-        load_weight_percentile_data(os.path.join(ROOT_DIR, 'data', 'big_three_data', 'Sex_Weight_Bigthree.csv'))
+        age_file_path = '/Users/yhjboong/Desktop/Database/BuiltBuff/data/big_three_data/Sex_Age_Bigthree.csv'
+        weight_file_path = '/Users/yhjboong/Desktop/Database/BuiltBuff/data/big_three_data/Sex_Weight_Bigthree.csv'
+
+        load_age_percentile_data(age_file_path)
+        load_weight_percentile_data(weight_file_path)
         print("Initial data loaded successfully.")
 
         # Add 'registered_date' column if it doesn't exist

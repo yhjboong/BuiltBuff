@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Overview Card -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Workout Overview</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <h4>Last 30 Days</h4>
+                            <h2 class="display-4">{{ workout_data.total_sessions }}</h2>
+                            <p class="text-muted">Total Workouts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Most Common Exercises -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3>Most Common Exercises</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="commonExercisesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Records -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3>Personal Records</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Exercise</th>
+                                    <th>Weight</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exercise, pr in workout_data.prs.items() %}
+                                <tr>
+                                    <td>{{ exercise }}</td>
+                                    <td>{{ pr.weight }} lbs</td>
+                                    <td>{{ pr.date.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Charts -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Progress Tracking</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for exercise, data in workout_data.progress.items() %}
+                        <div class="col-md-6 mb-4">
+                            <h4>{{ exercise|title }}</h4>
+                            <canvas id="progressChart{{ loop.index }}"></canvas>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Common Exercises Chart
+    const commonExercisesCtx = document.getElementById('commonExercisesChart').getContext('2d');
+    new Chart(commonExercisesCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ workout_data.most_common|map(attribute=0)|list|tojson }},
+            datasets: [{
+                label: 'Times Performed',
+                data: {{ workout_data.most_common|map(attribute=1)|list|tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Progress Charts
+    {% for exercise, data in workout_data.progress.items() %}
+    const progressCtx{{ loop.index }} = document.getElementById('progressChart{{ loop.index }}').getContext('2d');
+    new Chart(progressCtx{{ loop.index }}, {
+        type: 'line',
+        data: {
+            labels: {{ data.dates|tojson }},
+            datasets: [{
+                label: 'Weight (lbs)',
+                data: {{ data.weights|tojson }},
+                borderColor: 'rgba(75, 192, 192, 1)',
+                tension: 0.1
+            },
+            {
+                label: 'Estimated 1RM',
+                data: {{ data.one_rms|tojson }},
+                borderColor: 'rgba(255, 99, 132, 1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    {% endfor %}
+});
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.display-4 {
+    font-weight: 300;
+    line-height: 1.2;
+}
+
+.progress {
+    height: 20px;
+}
+
+.progress-bar-custom {
+    transition: width .6s ease;
+}
+
+canvas {
+    max-height: 300px;
+}
+</style>
+{% endblock %} 

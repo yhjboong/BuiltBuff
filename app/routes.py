@@ -14,6 +14,8 @@ from app.utils.utils import (
     get_weight_class,
 )
 
+
+
 routes = Blueprint('routes', __name__)
 
 @routes.route('/')
@@ -36,7 +38,7 @@ def signup():
         
         height_foot = int(request.form.get('height_foot', 0))
         height_inch = int(request.form.get('height_inch', 0))
-        total_height_in_inches = height_foot * 12 + height_inch
+        # total_height_in_inches = height_foot * 12 + height_inch
         
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
@@ -51,7 +53,8 @@ def signup():
             age=age,
             weight=weight,
             gender=gender,
-            height=total_height_in_inches
+            height_foot=height_foot,
+            height_inch=height_inch
         )
         db.session.add(new_user)
         db.session.commit()
@@ -550,7 +553,8 @@ def edit_profile():
         user.last_name = request.form.get('last_name')
         user.age = request.form.get('age', type=int)
         user.weight = request.form.get('weight', type=float)
-        user.height = request.form.get('height', type=float)
+        user.height_foot = request.form.get('height_foot', type=float)
+        user.height_inch = request.form.get('height_inch', type=float)
         user.gender = request.form.get('gender')
         
         db.session.commit()
@@ -563,7 +567,8 @@ def edit_profile():
                                "last_name": user.last_name,
                                "age": user.age,
                                "weight": user.weight,
-                               "height": user.height,
+                               "height_foot": user.height_foot,
+                               "height_inch": user.height_inch,
                                "gender": user.gender
                            })
 
@@ -658,14 +663,12 @@ def one_rm_tracker():
         flash("Invalid age format. Please update your profile.", "danger")
         return redirect(url_for('routes.edit_profile'))
 
-    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    if request.method == 'POST':
         try:
-            # Extract form data
             exercise_raw = request.form.get('exercise')
             weight = float(request.form.get('weight'))
             date_recorded = datetime.now()
 
-            # Map exercise name
             exercise_mapping = {
                 'Bench Press': 'Bench Press',
                 'Squat': 'Squat',
@@ -673,13 +676,16 @@ def one_rm_tracker():
             }
             exercise_name = exercise_mapping.get(exercise_raw)
             if not exercise_name:
-                raise ValueError(f"Invalid exercise type: {exercise_raw}")
+                flash(f"Invalid exercise type: {exercise_raw}", "danger")
+                return redirect(url_for('routes.one_rm_tracker'))
 
-            # Calculate percentiles
-            age_percentile = calculate_age_percentile(exercise_name, weight, user_age, user.gender)
-            weight_percentile = calculate_weight_percentile(exercise_name, weight, user.weight, user.gender)
+            # Get percentiles and extract the first element of the tuple
+            age_percentile_tuple = calculate_age_percentile(exercise_name, weight, user_age, user.gender)
+            weight_percentile_tuple = calculate_weight_percentile(exercise_name, weight, user.weight, user.gender)
 
-            # Insert new record into the database
+            age_percentile = age_percentile_tuple[0]  # Extract the percentile value
+            weight_percentile = weight_percentile_tuple[0]  # Extract the percentile value
+
             new_record = OneRMRecord(
                 user_id=user.user_id,
                 exercise_type=exercise_name,
@@ -688,25 +694,19 @@ def one_rm_tracker():
                 age_percentile=age_percentile,
                 weight_percentile=weight_percentile
             )
+
             db.session.add(new_record)
             db.session.commit()
 
-            # Return the updated record as JSON
-            return jsonify({
-                'success': True,
-                'record': {
-                    'exercise_type': exercise_name,
-                    'weight': weight,
-                    'date_recorded': date_recorded.strftime('%Y-%m-%d'),
-                    'age_percentile': age_percentile,
-                    'weight_percentile': weight_percentile
-                }
-            })
+            flash("Record added successfully!", "success")
+            return redirect(url_for('routes.one_rm_tracker'))
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)})
+            flash(f"Error saving record: {e}", "danger")
+            return redirect(url_for('routes.one_rm_tracker'))
 
-    # Retrieve existing records for rendering
+
+    # On GET: Retrieve existing records for display
     records = OneRMRecord.query.filter_by(user_id=user.user_id).order_by(OneRMRecord.date_recorded.desc()).all()
     records_dict = [{
         'exercise_type': record.exercise_type,
@@ -715,14 +715,86 @@ def one_rm_tracker():
         'age_percentile': record.age_percentile,
         'weight_percentile': record.weight_percentile
     } for record in records]
+    def combine_intervals(ll1, ul1, ll2, ul2):
+        # Combine by averaging if both available
+        def avg(a, b):
+            if a is not None and b is not None:
+                return (a + b) / 2.0
+            return a if a is not None else b
+
+        combined_ll = avg(ll1, ll2)
+        combined_ul = avg(ul1, ul2)
+        return combined_ll, combined_ul
+
+    records_dict_with_ll = []
+    for r in records:
+        ex_name = r.exercise_type
+        w = r.weight
+        age_pct, age_ll, age_ul = calculate_age_percentile(ex_name, w, user_age, user.gender)
+        wt_pct, wt_ll, wt_ul = calculate_weight_percentile(ex_name, w, user.weight, user.gender)
+
+        # Compute combined intervals
+        combined_ll, combined_ul = combine_intervals(age_ll, age_ul, wt_ll, wt_ul)
+
+        rec = {
+            'exercise_type': r.exercise_type,
+            'weight': r.weight,
+            'date_recorded': r.date_recorded.strftime('%Y-%m-%d'),
+            'age_percentile': r.age_percentile,
+            'weight_percentile': r.weight_percentile,
+            'age_ll': age_ll,
+            'age_ul': age_ul,
+            'weight_ll': wt_ll,
+            'weight_ul': wt_ul,
+            'record_id': r.record_id,
+            'combined_ll': combined_ll,
+            'combined_ul': combined_ul,
+        }
+        records_dict_with_ll.append(rec)
+
+    records_dict = records_dict_with_ll
+
+    # Default values for advanced analysis
+    advanced_analysis = {
+        'exercise': None,
+        'weight': None,
+        'age_percentile': None,
+        'age_ll': None,
+        'age_ul': None,
+        'weight_percentile': None,
+        'weight_ll': None,
+        'weight_ul': None
+    }
+
+    # Calculate advanced analysis if records exist
+    if records_dict:
+        last_record = records_dict[0]
+        ex_name = last_record['exercise_type']
+        w = last_record['weight']
+
+        age_pct, age_ll, age_ul = calculate_age_percentile(ex_name, w, user_age, user.gender)
+        wt_pct, wt_ll, wt_ul = calculate_weight_percentile(ex_name, w, user.weight, user.gender)
+
+        advanced_analysis.update({
+            'exercise': ex_name,
+            'weight': w,
+            'age_percentile': age_pct,
+            'age_ll': age_ll,
+            'age_ul': age_ul,
+            'weight_percentile': wt_pct,
+            'weight_ll': wt_ll,
+            'weight_ul': wt_ul
+        })
 
     return render_template(
         'one_rm_tracker.html',
         user=user,
         records=records_dict,
         age_category=get_age_category(user_age),
-        weight_class=get_weight_class(user.gender, user.weight)
+        weight_class=get_weight_class(user.gender, user.weight),
+        advanced_analysis=advanced_analysis
     )
+
 
 
 @routes.route('/debug_one_rm_records', methods=['GET'])
@@ -738,3 +810,19 @@ def debug_one_rm_tracker():
         'weight_percentile': record.weight_percentile
     } for record in records]
     return jsonify(records_dict)
+
+@routes.route('/debug_one_rm', methods=['GET'])
+@login_required
+def debug_one_rm():
+    records = OneRMRecord.query.filter_by(user_id=current_user.user_id).all()
+    records_dict = [
+        {
+            'exercise_type': record.exercise_type,
+            'weight': record.weight,
+            'date_recorded': record.date_recorded.strftime('%Y-%m-%d'),
+            'age_percentile': record.age_percentile,
+            'weight_percentile': record.weight_percentile
+        }
+        for record in records
+    ]
+    return jsonify(records_dict), 200
