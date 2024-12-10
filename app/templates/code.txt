@@ -895,15 +895,14 @@ document.addEventListener('DOMContentLoaded', function() {
 {% extends "base.html" %}
 
 {% block extra_js %}
-    <script src="{{ url_for('static', filename='js/plotly.js-3.0.0-rc.1/dist/plotly.min.js') }}"></script>
-    {{ super() }}
+<script src="{{ url_for('static', filename='js/plotly.js-3.0.0-rc.1/dist/plotly.min.js') }}"></script>
+{{ super() }}
 {% endblock %}
 
 {% block content %}
 <div class="container">
     <h1>1RM Progress Tracker</h1>
     
-    <!-- User Info Section -->
     <div class="row mb-4">
         <div class="col">
             <p><strong>Age Category:</strong> {{ age_category }}</p>
@@ -913,7 +912,6 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 
-    <!-- Input Form Section -->
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card">
@@ -921,7 +919,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h3>Record 1RM</h3>
                 </div>
                 <div class="card-body">
-                    <!-- Traditional form submission -->
                     <form id="oneRMForm" method="POST">
                         <div class="form-group mb-3">
                             <label for="exercise">Exercise</label>
@@ -942,15 +939,21 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 
-    <!-- Progress Chart -->
+    <script>
+        const advanced_analysis = {{ advanced_analysis|tojson|safe}};
+        let records = {{ records|tojson|safe}};
+    </script>
+
     <div class="row mt-4">
+        <div class="col-12 d-flex justify-content-between mb-2">
+            <h4>1RM Progress Over Time</h4>
+            <button id="toggleErrorBars" class="btn btn-secondary">Toggle Error Bars</button>
+        </div>
         <div class="col-12">
-            <!-- Chart container -->
             <div id="progressChart" style="width:100%; height:500px; border:1px solid #ddd;"></div>
         </div>
     </div>
 
-    <!-- Records Table -->
     <div class="row mt-4">
         <div class="col">
             <table class="table">
@@ -961,6 +964,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <th>Weight (kg)</th>
                         <th>Age Percentile</th>
                         <th>Weight Percentile</th>
+                        <th>Analysis</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -971,66 +975,145 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td>{{ record.weight }}</td>
                         <td>{{ record.age_percentile }}</td>
                         <td>{{ record.weight_percentile }}</td>
+                        <td>
+                            <button class="btn btn-info btn-sm view-analysis-btn"
+                                    data-exercise="{{ record.exercise_type }}"
+                                    data-weight="{{ record.weight }}"
+                                    data-agell="{{ record.age_ll }}"
+                                    data-ageul="{{ record.age_ul }}"
+                                    data-wtll="{{ record.weight_ll }}"
+                                    data-wtul="{{ record.weight_ul }}">
+                                View Analysis
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-</div>
 
-<script>
-    // Records from backend
-    const records = {{ records|tojson|safe }};
-    console.log('Initial records:', records);
+    <!-- Modal for Advanced Analysis -->
+    <div class="modal fade" id="analysisModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Advanced Analysis</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>Exercise:</strong> <span id="analysisExercise"></span></p>
+            <p><strong>Weight:</strong> <span id="analysisWeight"></span> kg</p>
+            <p><strong>Age LL-UL:</strong> <span id="analysisAgeLL"></span> - <span id="analysisAgeUL"></span> kg</p>
+            <p><strong>Weight LL-UL:</strong> <span id="analysisWtLL"></span> - <span id="analysisWtUL"></span> kg</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    function updateChart() {
-        console.log('Updating chart with records:', records);
+    <script>
+        let showErrorBars = false;
+        function updateChart() {
+            const exerciseColors = {
+                'Squat': 'red',
+                'Bench Press': 'blue',
+                'Deadlift': 'green'
+            };
+            const exerciseTypes = ['Squat', 'Bench Press', 'Deadlift'];
+            const data = [];
 
-        const exerciseTypes = ['Squat', 'Bench Press', 'Deadlift'];
-        const traces = [];
+            exerciseTypes.forEach(exercise => {
+                const exerciseRecords = records.filter(r => r.exercise_type === exercise);
+                if (exerciseRecords.length > 0) {
+                    const x = exerciseRecords.map(r => r.date_recorded);
+                    const y = exerciseRecords.map(r => r.weight);
 
-        // Create traces for each exercise type if data exists
-        exerciseTypes.forEach(exercise => {
-            const exerciseRecords = records.filter(r => r.exercise_type === exercise);
-            console.log(`Records for ${exercise}:`, exerciseRecords);
+                    let error_y = undefined;
+                    if (showErrorBars) {
+                        const y_plus = exerciseRecords.map(r => (r.combined_ul && !isNaN(r.combined_ul)) ? (r.combined_ul - r.weight) : 0);
+                        const y_minus = exerciseRecords.map(r => (r.combined_ll && !isNaN(r.combined_ll)) ? (r.weight - r.combined_ll) : 0);
+                        error_y = {
+                            type: 'data',
+                            symmetric: false,
+                            array: y_plus,
+                            arrayminus: y_minus,
+                            visible: true
+                        };
+                    }
 
-            if (exerciseRecords.length > 0) {
-                traces.push({
-                    x: exerciseRecords.map(r => r.date_recorded),
-                    y: exerciseRecords.map(r => r.weight),
-                    name: exercise,
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    marker: { size: 8 },
-                    line: { width: 2 }
-                });
-            }
-        });
+                    data.push({
+                        x: x,
+                        y: y,
+                        name: exercise,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        marker: { size: 8, color: exerciseColors[exercise] },
+                        line: { width: 2, color: exerciseColors[exercise] },
+                        error_y: error_y
+                    });
+                }
+            });
 
-        if (traces.length === 0) {
-            console.warn('No data to display on the chart.');
-            return;
+            const layout = {
+                title: { text: '1RM Progress Over Time', font: { size: 24 } },
+                xaxis: { title: 'Date', type: 'date', tickformat: '%Y-%m-%d' },
+                yaxis: { title: 'Weight (kg)', rangemode: 'tozero' },
+                showlegend: true,
+                legend: { x: 1, xanchor: 'right', y: 1 },
+                margin: { t: 50, r: 50, b: 50, l: 50 },
+                hovermode: 'closest'
+            };
+
+            Plotly.newPlot('progressChart', data, layout, { responsive: true });
         }
 
-        const layout = {
-            title: { text: '1RM Progress Over Time', font: { size: 24 } },
-            xaxis: { title: 'Date', type: 'date', tickformat: '%Y-%m-%d' },
-            yaxis: { title: 'Weight (kg)', rangemode: 'tozero' },
-            showlegend: true,
-            legend: { x: 1, xanchor: 'right', y: 1 },
-            margin: { t: 50, r: 50, b: 50, l: 50 },
-            hovermode: 'closest'
-        };
+        document.addEventListener('DOMContentLoaded', () => {
+            updateChart();
+            document.getElementById('toggleErrorBars').addEventListener('click', () => {
+                showErrorBars = !showErrorBars;
+                updateChart();
+            });
+        });
 
-        Plotly.newPlot('progressChart', traces, layout, { responsive: true });
-    }
+        // Modal logic
+        const analysisModal = new bootstrap.Modal(document.getElementById('analysisModal'));
+        document.querySelectorAll('.view-analysis-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const exercise = btn.getAttribute('data-exercise');
+                const weight = btn.getAttribute('data-weight');
+                const agell = btn.getAttribute('data-agell');
+                const ageul = btn.getAttribute('data-ageul');
+                const wtll = btn.getAttribute('data-wtll');
+                const wtul = btn.getAttribute('data-wtul');
 
-    // Ensure the DOM is loaded before calling updateChart()
-    document.addEventListener('DOMContentLoaded', updateChart);
-</script>
+                document.getElementById('analysisExercise').textContent = exercise;
+                document.getElementById('analysisWeight').textContent = weight;
+                document.getElementById('analysisAgeLL').textContent = agell || 'N/A';
+                document.getElementById('analysisAgeUL').textContent = ageul || 'N/A';
+                document.getElementById('analysisWtLL').textContent = wtll || 'N/A';
+                document.getElementById('analysisWtUL').textContent = wtul || 'N/A';
+
+                analysisModal.show();
+            });
+        });
+    </script>
+
+    {% if advanced_analysis.exercise %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>Advanced Analysis</h3>
+        </div>
+        <div class="card-body">
+            <p>
+                Your last recorded {{ advanced_analysis.exercise }} at {{ advanced_analysis.weight }} kg is at approximately
+                Age Percentile: {{ advanced_analysis.age_percentile }}% (LL: {{ advanced_analysis.age_ll }} kg, UL: {{ advanced_analysis.age_ul }} kg)
+                and Weight Percentile: {{ advanced_analysis.weight_percentile }}% (LL: {{ advanced_analysis.weight_ll }} kg, UL: {{ advanced_analysis.weight_ul }} kg).
+            </p>
+        </div>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
-
 ==> ./profile.html <==
 {% extends "base.html" %}
 

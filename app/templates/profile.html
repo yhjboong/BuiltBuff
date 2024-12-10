@@ -14,13 +14,16 @@
             </div>
             
             <div class="stats-box">
-                <h4>{{ user.height }}</h4>
-                <p>Height (inches)</p>
+                <h4>{{ user.height_foot }}'{{ user.height_inch }}"</h4>
+                <p>Height</p>
             </div>
             
             <div class="stats-box">
                 <h4>{{ user.age }}</h4>
                 <p>Age</p>
+            </div>
+            <div class="text-end mt-3">
+                <a href="{{ url_for('routes.edit_profile') }}" class="btn btn-primary">Edit Profile</a>
             </div>
         </div>
         

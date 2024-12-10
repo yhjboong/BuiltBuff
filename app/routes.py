@@ -36,6 +36,10 @@ def signup():
         weight = request.form['weight']
         gender = request.form['gender']
         
+        if not gender:
+            flash("Gender is required. Please fill in all fields.", "danger")
+            return redirect(url_for('routes.signup'))
+        
         height_foot = int(request.form.get('height_foot', 0))
         height_inch = int(request.form.get('height_inch', 0))
         # total_height_in_inches = height_foot * 12 + height_inch
@@ -553,8 +557,8 @@ def edit_profile():
         user.last_name = request.form.get('last_name')
         user.age = request.form.get('age', type=int)
         user.weight = request.form.get('weight', type=float)
-        user.height_foot = request.form.get('height_foot', type=float)
-        user.height_inch = request.form.get('height_inch', type=float)
+        user.height_foot = request.form.get('height_foot', type=int)
+        user.height_inch = request.form.get('height_inch', type=int)
         user.gender = request.form.get('gender')
         
         db.session.commit()
@@ -571,6 +575,7 @@ def edit_profile():
                                "height_inch": user.height_inch,
                                "gender": user.gender
                            })
+
 
 @routes.route('/calculate_1rm/<int:workout_id>', methods=['GET'])
 @login_required
@@ -662,6 +667,10 @@ def one_rm_tracker():
     except ValueError:
         flash("Invalid age format. Please update your profile.", "danger")
         return redirect(url_for('routes.edit_profile'))
+    
+    if not user.gender:
+        flash("Gender not specified. Please update your profile.", "danger")
+        return redirect(url_for('routes.edit_profile'))
 
     if request.method == 'POST':
         try:
@@ -680,8 +689,8 @@ def one_rm_tracker():
                 return redirect(url_for('routes.one_rm_tracker'))
 
             # Get percentiles and extract the first element of the tuple
-            age_percentile_tuple = calculate_age_percentile(exercise_name, weight, user_age, user.gender)
-            weight_percentile_tuple = calculate_weight_percentile(exercise_name, weight, user.weight, user.gender)
+            age_percentile_tuple = calculate_age_percentile(exercise_name, weight, user_age, user.gender.lower())
+            weight_percentile_tuple = calculate_weight_percentile(exercise_name, weight, user.weight, user.gender.lower())
 
             age_percentile = age_percentile_tuple[0]  # Extract the percentile value
             weight_percentile = weight_percentile_tuple[0]  # Extract the percentile value
@@ -730,8 +739,8 @@ def one_rm_tracker():
     for r in records:
         ex_name = r.exercise_type
         w = r.weight
-        age_pct, age_ll, age_ul = calculate_age_percentile(ex_name, w, user_age, user.gender)
-        wt_pct, wt_ll, wt_ul = calculate_weight_percentile(ex_name, w, user.weight, user.gender)
+        age_pct, age_ll, age_ul = calculate_age_percentile(ex_name, w, user_age, user.gender.lower())
+        wt_pct, wt_ll, wt_ul = calculate_weight_percentile(ex_name, w, user.weight, user.gender.lower())
 
         # Compute combined intervals
         combined_ll, combined_ul = combine_intervals(age_ll, age_ul, wt_ll, wt_ul)
@@ -772,8 +781,8 @@ def one_rm_tracker():
         ex_name = last_record['exercise_type']
         w = last_record['weight']
 
-        age_pct, age_ll, age_ul = calculate_age_percentile(ex_name, w, user_age, user.gender)
-        wt_pct, wt_ll, wt_ul = calculate_weight_percentile(ex_name, w, user.weight, user.gender)
+        age_pct, age_ll, age_ul = calculate_age_percentile(ex_name, w, user_age, user.gender.lower())
+        wt_pct, wt_ll, wt_ul = calculate_weight_percentile(ex_name, w, user.weight, user.gender.lower())
 
         advanced_analysis.update({
             'exercise': ex_name,

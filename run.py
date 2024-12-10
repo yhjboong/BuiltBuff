@@ -179,7 +179,8 @@ def setup_database():
                 password=generate_password_hash("password123"),
                 age=30,
                 weight=70,
-                height=170,
+                height_foot=5,
+                height_inch=9,
                 gender="male",
             )
             db.session.add(test_user)
