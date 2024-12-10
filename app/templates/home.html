@@ -12,8 +12,8 @@
     <nav class="navbar landing-nav">
         <div class="navbar-brand">BuiltBuff</div>
         <div class="auth-buttons">
-            <a href="{{ url_for('login') }}" class="btn btn-outline">Log In</a>
-            <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+            <a href="{{ url_for('routes.login') }}" class="btn btn-outline">Log In</a>
+            <a href="{{ url_for('routes.signup') }}" class="btn btn-primary">Sign Up</a>
         </div>
     </nav>
 
@@ -40,8 +40,8 @@
             </div>
 
             <div class="cta-buttons">
-                <a href="{{ url_for('signup') }}" class="btn btn-primary btn-large">Get Started</a>
-                <a href="{{ url_for('login') }}" class="btn btn-outline btn-large">Already have an account?</a>
+                <a href="{{ url_for('routes.signup') }}" class="btn btn-primary btn-large">Get Started</a>
+                <a href="{{ url_for('routes.login') }}" class="btn btn-outline btn-large">Already have an account?</a>
             </div>
         </section>
     </main>

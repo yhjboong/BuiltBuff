@@ -4,9 +4,8 @@ from datetime import datetime
 from sqlalchemy.sql import func
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from app import db
 
-# Remove the "from app import db" line and use the db from parent scope
-db = SQLAlchemy()
 intensity_mapping = {
     'low': 1,
     'medium': 2,
@@ -203,3 +202,34 @@ class UserPreferences(db.Model):
     
     user = db.relationship('User', backref='preferences')
 
+class AgePercentileData(db.Model):
+    __tablename__ = 'age_percentile_data'
+    id = db.Column(db.Integer, primary_key=True)
+    sex = db.Column(db.String(10), nullable=False)
+    age_category = db.Column(db.String(50), nullable=False)
+    percentile = db.Column(db.Float, nullable=False)
+    squat = db.Column(db.Float, nullable=False)
+    squat_ll = db.Column(db.Float, nullable=True)
+    squat_ul = db.Column(db.Float, nullable=True)
+    bench = db.Column(db.Float, nullable=False)
+    bench_ll = db.Column(db.Float, nullable=True)
+    bench_ul = db.Column(db.Float, nullable=True)
+    deadlift = db.Column(db.Float, nullable=False)
+    deadlift_ll = db.Column(db.Float, nullable=True)
+    deadlift_ul = db.Column(db.Float, nullable=True)
+
+class WeightPercentileData(db.Model):
+    __tablename__ = 'weight_percentile_data'
+    id = db.Column(db.Integer, primary_key=True)
+    sex = db.Column(db.String(10), nullable=False)
+    weight_class = db.Column(db.String(50), nullable=False)
+    percentile = db.Column(db.Float, nullable=False)
+    squat = db.Column(db.Float, nullable=False)
+    squat_ll = db.Column(db.Float, nullable=True)
+    squat_ul = db.Column(db.Float, nullable=True)
+    bench = db.Column(db.Float, nullable=False)
+    bench_ll = db.Column(db.Float, nullable=True)
+    bench_ul = db.Column(db.Float, nullable=True)
+    deadlift = db.Column(db.Float, nullable=False)
+    deadlift_ll = db.Column(db.Float, nullable=True)
+    deadlift_ul = db.Column(db.Float, nullable=True)

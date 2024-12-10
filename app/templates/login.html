@@ -37,7 +37,7 @@
                 }, 2000);
             </script>
                 
-            <form action="{{ url_for('login') }}" method="POST" class="auth-form">
+            <form action="{{ url_for('routes.login') }}" method="POST" class="auth-form">
                 <div class="form-group">
                     <input type="email" name="email" class="form-control" placeholder="Email" required>
                 </div>
@@ -49,7 +49,7 @@
                 <button type="submit" class="btn btn-primary">Log In</button>
                 
                 <div class="form-footer">
-                    <a href="{{ url_for('signup') }}" class="btn btn-secondary">
+                    <a href="{{ url_for('routes.signup') }}" class="btn btn-secondary">
                         Create new account
                     </a>
                 </div>

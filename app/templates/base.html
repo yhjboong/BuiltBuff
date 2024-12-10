@@ -80,7 +80,7 @@
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('home') }}">BuiltBuff</a>
+            <a class="navbar-brand" href="{{ url_for('routes.home') }}">BuiltBuff</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -88,29 +88,29 @@
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+                            <a class="nav-link" href="{{ url_for('routes.profile') }}">Profile</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('exercises') }}">Exercises</a>
+                            <a class="nav-link" href="{{ url_for('routes.exercises') }}">Exercises</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('current_workout') }}">Start Workout</a>
+                            <a class="nav-link" href="{{ url_for('routes.current_workout') }}">Start Workout</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('one_rm_tracker') }}">1RM Tracker</a>
+                            <a class="nav-link" href="{{ url_for('routes.one_rm_tracker') }}">1RM Tracker</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('history') }}">History</a>
+                            <a class="nav-link" href="{{ url_for('routes.history') }}">History</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                            <a class="nav-link" href="{{ url_for('routes.logout') }}">Logout</a>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                            <a class="nav-link" href="{{ url_for('routes.login') }}">Login</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
+                            <a class="nav-link" href="{{ url_for('routes.signup') }}">Sign Up</a>
                         </li>
                     {% endif %}
                 </ul>

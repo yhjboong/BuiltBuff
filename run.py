@@ -1,21 +1,23 @@
-import sys
+from app import create_app, db
 import os
 from pathlib import Path
 import pandas as pd
-from datetime import datetime, timedelta
-from models import db, ExerciseList, WorkoutSession, WorkoutLog, User, WorkoutHistory
-from app import app
+from datetime import timedelta, datetime
+from app.models import ExerciseList, WorkoutSession, WorkoutLog, User
+from app.utils.utils import load_age_percentile_data, load_weight_percentile_data
+from werkzeug.security import generate_password_hash
 
-# Get the project root directory
 ROOT_DIR = Path(__file__).parent
-sys.path.append(str(ROOT_DIR))
 
 def load_exercises_from_csv():
+    """
+    Loads exercises from the CSV file into the database.
+    """
     try:
-        # Load exercise CSV file
+        print("Loading exercises from CSV...")
         df_exercises = pd.read_csv(os.path.join(ROOT_DIR, 'data', 'gym_exercise_dataset.csv'))
 
-        # Data cleaning for exercises
+        # Data cleaning
         df_exercises['Exercise Name'] = df_exercises['Exercise Name'].str.strip().str.lower()
         df_exercises['Equipment'] = df_exercises['Equipment'].str.strip().str.lower()
         df_exercises['Variation'] = df_exercises['Variation'].astype(str).str.strip().str.lower()
@@ -26,7 +28,7 @@ def load_exercises_from_csv():
             missing = required_columns - set(df_exercises.columns)
             raise ValueError(f"CSV file is missing required columns: {', '.join(missing)}")
 
-        # Load each exercise into the database
+        # Load exercises into the database
         for _, row in df_exercises.iterrows():
             description = f"Preparation: {row['Preparation']}\nExecution: {row['Execution']}"
             existing_exercise = ExerciseList.query.filter_by(
@@ -54,8 +56,11 @@ def load_exercises_from_csv():
         raise e
 
 def load_workout_sessions_from_csv():
+    """
+    Loads workout session data from the CSV file into the database.
+    """
     try:
-        print("Starting to load Matthew's workout data...")
+        print("Loading workout sessions from CSV...")
         df = pd.read_csv(os.path.join(ROOT_DIR, 'data', 'matthew-eleazar-strong.csv'))
         print(f"Found {len(df)} workout records in CSV")
         
@@ -64,7 +69,7 @@ def load_workout_sessions_from_csv():
         if not user:
             print("Error: test1@test.com user not found! Please run test_data.py first")
             return
-            
+        
         print(f"Loading workouts for user ID: {user.user_id}")
         
         # Group by session to create workout sessions
@@ -121,8 +126,58 @@ def load_workout_sessions_from_csv():
         print(f"Error loading workout data: {e}")
         raise
 
-if __name__ == '__main__':
+def setup_database():
+    """
+    Drops all tables, recreates them, and performs initial setup or schema updates.
+    """
     with app.app_context():
+        print("Setting up the database...")
+        db.drop_all()
         db.create_all()
+        print("Database tables created successfully.")
+        
+        test_user = User.query.filter_by(email="test1@test.com").first()
+        if not test_user:
+            print("Creating test user 'test1@test.com'...")
+            test_user = User(
+                first_name="Test",
+                last_name="User",
+                email="test1@test.com",
+                password=generate_password_hash("password123"),
+                age=30,
+                weight=70,
+                height=170,
+                gender="male",
+            )
+            db.session.add(test_user)
+            db.session.commit()
+            print("Test user created successfully.")
+
         load_exercises_from_csv()
         load_workout_sessions_from_csv()
+        load_age_percentile_data(os.path.join(ROOT_DIR, 'data', 'big_three_data', 'Sex_Age_Bigthree.csv'))
+        load_weight_percentile_data(os.path.join(ROOT_DIR, 'data', 'big_three_data', 'Sex_Weight_Bigthree.csv'))
+        print("Initial data loaded successfully.")
+
+        # Add 'registered_date' column if it doesn't exist
+        try:
+            print("Checking and updating schema for 'registered_date'...")
+            db.session.execute('ALTER TABLE user ADD COLUMN registered_date DATETIME')
+            db.session.execute(
+                'UPDATE user SET registered_date = ? WHERE registered_date IS NULL',
+                [datetime.utcnow()]
+            )
+            db.session.commit()
+            print("'registered_date' column added and updated successfully.")
+        except Exception as e:
+            # Handle case where the column already exists or other issues
+            print(f"Schema update skipped or failed: {e}")
+
+app = create_app()
+
+if __name__ == '__main__':
+    
+    if os.environ.get('INIT_DB', 'false') == 'true':
+        setup_database()
+    
+    app.run(debug=True, host='0.0.0.0', port=5001)

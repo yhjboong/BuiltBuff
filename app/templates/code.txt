@@ -82,31 +82,27 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('home') }}">BuiltBuff</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav mr-auto">
+                <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('startworkout') }}">Start Workout</a>
+                            <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('exercises') }}">Exercises</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('history') }}">History</a>
+                            <a class="nav-link" href="{{ url_for('current_workout') }}">Start Workout</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('one_rm_tracker') }}">1RM Tracker</a>
                         </li>
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav">
-                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('history') }}">History</a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
                         </li>
@@ -115,7 +111,7 @@
                             <a class="nav-link" href="{{ url_for('login') }}">Login</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                            <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -717,9 +713,9 @@ document.addEventListener('DOMContentLoaded', function() {
 ==> ./one_rm_tracker.html <==
 {% extends "base.html" %}
 
-{% block head %}
-{{ super() }}
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+{% block extra_js %}
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    {{ super() }}
 {% endblock %}
 
 {% block content %}
@@ -749,7 +745,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <label for="exercise">Exercise</label>
                             <select name="exercise" id="exercise" class="form-select" required>
                                 <option value="Squat">Squat</option>
-                                <option value="Bench">Bench Press</option>
+                                <option value="Bench Press">Bench Press</option>
                                 <option value="Deadlift">Deadlift</option>
                             </select>
                         </div>
@@ -803,17 +799,17 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 // Initialize the records array with the data from server
 const records = {{ records|tojson|safe if records else '[]' }};
-console.log('Initial records:', records); // Debug log
+console.log('Initial records:', records);
 
 function updateChart() {
-    console.log('Updating chart with records:', records); // Debug log
+    console.log('Updating chart with records:', records);
     
-    const exerciseTypes = ['Squat', 'Bench', 'Deadlift'];
+    const exerciseTypes = ['Squat', 'Bench Press', 'Deadlifts'];
     const traces = [];
 
     exerciseTypes.forEach(exercise => {
         const exerciseRecords = records.filter(r => r.exercise_type === exercise);
-        console.log(`Records for ${exercise}:`, exerciseRecords); // Debug log
+        console.log(`Records for ${exercise}:`, exerciseRecords);
         
         if (exerciseRecords.length > 0) {
             traces.push({
@@ -822,12 +818,8 @@ function updateChart() {
                 name: exercise,
                 type: 'scatter',
                 mode: 'lines+markers',
-                marker: {
-                    size: 8
-                },
-                line: {
-                    width: 2
-                }
+                marker: { size: 8 },
+                line: { width: 2 }
             });
         }
     });
@@ -856,73 +848,61 @@ function updateChart() {
         hovermode: 'closest'
     };
 
-    const config = {
-        responsive: true,
-        displayModeBar: true
-    };
-
-    console.log('Drawing chart with traces:', traces); // Debug log
-    Plotly.newPlot('progressChart', traces, layout, config);
+    Plotly.newPlot('progressChart', traces, layout, {responsive: true});
 }
 
 // Initial chart render
 updateChart();
 
 // Form submission handler
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('oneRMForm');
+document.getElementById('oneRMForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    console.log('Form submitted');
     
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        console.log('Form submitted'); // Debug log
+    const formData = new FormData(this);
+    console.log('Exercise:', formData.get('exercise'));
+    console.log('Weight:', formData.get('weight'));
+    
+    try {
+        const response = await fetch("{{ url_for('one_rm_tracker') }}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
         
-        const formData = new FormData(this);
-        console.log('Exercise:', formData.get('exercise')); // Debug log
-        console.log('Weight:', formData.get('weight')); // Debug log
+        const data = await response.json();
+        console.log('Server response:', data);
         
-        try {
-            const response = await fetch("{{ url_for('one_rm_tracker') }}", {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
-            });
+        if (data.success) {
+            // Update records array
+            records.unshift(data.record);
             
-            const data = await response.json();
-            console.log('Server response:', data); // Debug log
+            // Update chart
+            updateChart();
             
-            if (data.success) {
-                // Get the table body
-                const tbody = document.querySelector('table tbody');
-                if (!tbody) {
-                    console.error('Table body not found');
-                    return;
-                }
-                
-                // Create new row
-                const newRow = document.createElement('tr');
-                newRow.innerHTML = `
-                    <td>${data.record.date_recorded}</td>
-                    <td>${data.record.exercise_type}</td>
-                    <td>${data.record.weight}</td>
-                    <td>${data.record.age_percentile}</td>
-                    <td>${data.record.weight_percentile}</td>
-                `;
-                
-                // Insert at the top of the table
-                tbody.insertBefore(newRow, tbody.firstChild);
-                
-                // Reset form
-                this.reset();
-            } else {
-                alert('Failed to save record');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error saving record');
+            // Update table
+            const tbody = document.querySelector('table tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${data.record.date_recorded}</td>
+                <td>${data.record.exercise_type}</td>
+                <td>${data.record.weight}</td>
+                <td>${data.record.age_percentile}</td>
+                <td>${data.record.weight_percentile}</td>
+            `;
+            tbody.insertBefore(newRow, tbody.firstChild);
+            
+            // Reset form
+            this.reset();
+        } else {
+            alert(data.error || 'Failed to save record');
         }
-    });
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error saving record');
+    }
 });
 </script>
 {% endblock %} 

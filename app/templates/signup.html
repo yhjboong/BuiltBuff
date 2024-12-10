@@ -12,7 +12,7 @@
         <h2 class="title">Create a new account</h2>
         <p class="subtitle">It's quick and easy.</p>
         
-        <form action="{{ url_for('signup') }}" method="POST">
+        <form action="{{ url_for('routes.signup') }}" method="POST">
             <div class="form-row">
                 <input type="text" name="first_name" class="form-control" placeholder="First name" required>
                 <input type="text" name="last_name" class="form-control" placeholder="Last name" required>
@@ -80,7 +80,7 @@
             <button type="submit" class="signup-button">Sign Up</button>
 
             <p class="login-text">
-                Already have an account? <a href="{{ url_for('login') }}" class="login-link">Log in</a>
+                Already have an account? <a href="{{ url_for('routes.login') }}" class="login-link">Log in</a>
             </p>
         </form>
     </div>

@@ -49,6 +49,28 @@ from utils.strength_utils import (
 from flask import jsonify
 from flask_migrate import Migrate
 
+def update_exercise_types():
+    try:
+        # Update 'Bench' to 'Bench Press'
+        records = OneRMRecord.query.filter_by(exercise_type='Bench').all()
+        for record in records:
+            record.exercise_type = 'Bench Press'
+        
+        # Update 'Deadlifts' to 'Deadlift' if needed
+        deadlift_records = OneRMRecord.query.filter_by(exercise_type='Deadlifts').all()
+        for record in deadlift_records:
+            record.exercise_type = 'Deadlift'
+        
+        db.session.commit()
+        
+        # Verify changes
+        distinct_exercises = db.session.query(OneRMRecord.exercise_type.distinct()).all()
+        print("Updated exercise types:", [ex[0] for ex in distinct_exercises])
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating records: {str(e)}")
+
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
@@ -67,15 +89,18 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 migrate = Migrate(app, db)
+
+# Move the function call inside app context after everything is initialized
 with app.app_context():
     db.create_all()
+    update_exercise_types()
 
 @app.route('/')
 @app.route('/home')
 def home():
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
-    return render_template('home.html')
+    return redirect(url_for('profile'))
 
 @app.route('/signup', methods=['POST', 'GET'])
 def signup():
@@ -819,18 +844,28 @@ def one_rm_tracker():
     user = current_user
     if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         try:
-            exercise_type = request.form.get('exercise')
+            exercise_raw = request.form.get('exercise')
+            # Map the form values to database exercise names
+            exercise_mapping = {
+                'Bench Press': {'name': 'Bench Press', 'equipment': 'Barbell', 'variation': 'No'},
+                'Squat': {'name': 'Squat', 'equipment': 'Barbell', 'variation': 'No'},
+                'Deadlift': {'name': 'Deadlifts', 'equipment': 'Barbell', 'variation': 'No'}
+            }
+            
+            exercise_info = exercise_mapping.get(exercise_raw)
+            if not exercise_info:
+                raise ValueError(f"Invalid exercise type: {exercise_raw}")
+
             weight = float(request.form.get('weight'))
             date_recorded = datetime.now()
-            
-            print(f"Received data - Exercise: {exercise_type}, Weight: {weight}")  # Debug log
 
-            age_percentile = calculate_age_percentile(exercise_type, weight, user.age, user.gender)
-            weight_percentile = calculate_weight_percentile(exercise_type, weight, user.weight, user.gender)
+            # Calculate percentiles using the correct exercise name
+            age_percentile = calculate_age_percentile(exercise_info['name'], weight, user.age, user.gender)
+            weight_percentile = calculate_weight_percentile(exercise_info['name'], weight, user.weight, user.gender)
 
             new_record = OneRMRecord(
                 user_id=user.user_id,
-                exercise_type=exercise_type,
+                exercise_type=exercise_info['name'],  # Use the mapped exercise name
                 weight=weight,
                 date_recorded=date_recorded,
                 age_percentile=age_percentile,
@@ -839,13 +874,11 @@ def one_rm_tracker():
 
             db.session.add(new_record)
             db.session.commit()
-            
-            print(f"Saved record ID: {new_record.record_id}")  # Debug log
 
             return jsonify({
                 'success': True,
                 'record': {
-                    'exercise_type': exercise_type,
+                    'exercise_type': exercise_info['name'],  # Use the mapped exercise name
                     'weight': weight,
                     'date_recorded': date_recorded.strftime('%Y-%m-%d'),
                     'age_percentile': age_percentile,

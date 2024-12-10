@@ -4,11 +4,12 @@
 <div class="container">
     <div class="card mb-4">
         <div class="card-header">
-            <h2>Current Workout</h2>
+            <h2>Edit Workout Session</h2>
+            <p class="text-muted mb-0">{{ workout_session.session_name }} - {{ workout_session.start_time.strftime('%Y-%m-%d %H:%M') }}</p>
         </div>
         <div class="card-body">
             <!-- Add Exercise Form -->
-            <form method="POST" action="{{ url_for('add_workout') }}" class="mb-4" id="workout-form">
+            <form method="POST" action="{{ url_for('routes.add_workout_to_session', session_id=workout_session.session_id) }}" class="mb-4" id="workout-form">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label for="exercise_name">Exercise</label>
@@ -54,41 +55,39 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <h5>{{ workout.exercise_name|title }}</h5>
-                                    <p>Weight: {{ workout.weight }} lbs | Reps: {{ workout.reps }}</p>
+                                    <p>
+                                        Equipment: {{ workout.equipment|title }}<br>
+                                        Weight: {{ workout.weight }} lbs | Reps: {{ workout.reps }}
+                                    </p>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     {% if workout.reps >= 4 and workout.reps <= 6 %}
                                         <div class="alert alert-info">
                                             <strong>Estimated 1RM:</strong> 
                                             {% if workout.one_rm %}
                                                 {{ "%.1f"|format(workout.one_rm) }} lbs
-                                                <br>
-                                                <small class="text-muted">
-                                                    Based on {{ workout.reps }}-rep set at {{ workout.weight }} lbs
-                                                </small>
                                             {% endif %}
                                         </div>
-                                    {% else %}
-                                        <div class="alert alert-warning">
-                                            Do 4-6 reps for 1RM calculation
-                                        </div>
                                     {% endif %}
+                                </div>
+                                <div class="col-md-2">
+                                    <form action="{{ url_for('routes.delete_workout_log', log_id=workout.workout_id) }}" method="POST">
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     </div>
                 {% endfor %}
             {% else %}
-                <p class="text-muted">No exercises added yet.</p>
+                <p class="text-muted">No exercises in this session yet.</p>
             {% endif %}
         </div>
     </div>
 
-    <!-- End Workout Button -->
+    <!-- Back to History Button -->
     <div class="text-center">
-        <form action="{{ url_for('end_session') }}" method="POST">
-            <button type="submit" class="btn btn-lg btn-success">End Workout</button>
-        </form>
+        <a href="{{ url_for('routes.history') }}" class="btn btn-secondary">Back to History</a>
     </div>
 </div>
 
@@ -100,11 +99,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Exercise search
     exerciseInput.addEventListener('input', function() {
-        if (this.value.length >= 2) {  // Start searching after 2 characters
+        if (this.value.length >= 2) {
             fetch(`/search_exercises?search_term=${encodeURIComponent(this.value)}`)
                 .then(response => response.json())
                 .then(data => {
-                    exerciseList.innerHTML = '';  // Clear existing options
+                    exerciseList.innerHTML = '';
                     data.results.forEach(exercise => {
                         const option = document.createElement('option');
                         option.value = exercise.exercise_name;
@@ -117,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get equipment options when exercise is selected
     exerciseInput.addEventListener('change', function() {
         if (this.value) {
-            fetch(`/get_equipment_options?exercise_name=${encodeURIComponent(this.value)}`)
+            fetch(`/get_equipment_options?exercise_name=${encodeURIComponent(this.value.toLowerCase())}`)
                 .then(response => response.json())
                 .then(data => {
                     equipmentSelect.innerHTML = '<option value="">Select equipment</option>';
