@@ -5,12 +5,20 @@ Members:
 Dan Yoo, Matthew Eleazar, Matheus de Andrade Barros, Macdonald Zharina
 
 How to start:
+First set up a venv:
+
+`source venv/bin/activate`
+
 
 To download all necessary libraries, do:
 
 `pip install -r requirements.txt`
 or
 `pip3 install -r requirements.txt`
+
+To run the server, run:
+`python3 run.py`
+
 
 Data Citation:
 
