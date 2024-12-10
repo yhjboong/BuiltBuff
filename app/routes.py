@@ -29,7 +29,7 @@ def signup():
         first_name = request.form['first_name']
         last_name = request.form['last_name']
         email = request.form['email']
-        password = generate_password_hash(request.form['password'])
+        password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
         age = request.form['age']
         weight = request.form['weight']
         gender = request.form['gender']
