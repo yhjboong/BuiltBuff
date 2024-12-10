@@ -297,20 +297,28 @@ select.form-control {
 }
 
 .signup-card {
-    width: 460px;
+    width: 90%;
+    max-width: 600px;  /* Increased width */
     background: white;
     padding: 40px;
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    margin: 40px auto;
 }
 
-.form-input {
+.form-input,
+.form-control {
     width: 100%;
-    padding: 12px;
+    padding: 10px;
     border: 1px solid #DDD;
     border-radius: 8px;
-    font-size: 16px;
-    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 /* History Page Specific */
