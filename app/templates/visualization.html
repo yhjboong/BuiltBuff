@@ -1,0 +1,104 @@
+<!-- app/templates/visualization.html -->
+{% extends "base.html" %}
+{% block title %}Exercise Visualization{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Exercise History Visualization</h1>
+    <div id="charts-container"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    fetch('/api/exercise_data', {
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Received data:', data);  // Debug log
+        const chartsContainer = document.getElementById('charts-container');
+        
+        if (Object.keys(data).length === 0) {
+            chartsContainer.innerHTML = '<p>No workout data available. Complete some workouts to see your progress!</p>';
+            return;
+        }
+
+        for (const [exercise, records] of Object.entries(data)) {
+            // Create container for each chart
+            const chartDiv = document.createElement('div');
+            chartDiv.style.marginBottom = '30px';
+            chartDiv.style.padding = '20px';
+            chartDiv.style.backgroundColor = '#f8f9fa';
+            chartDiv.style.borderRadius = '8px';
+            
+            const canvas = document.createElement('canvas');
+            canvas.id = `chart-${exercise.toLowerCase().replace(/\s+/g, '-')}`;
+            chartDiv.appendChild(canvas);
+            chartsContainer.appendChild(chartDiv);
+
+            // Prepare data for Chart.js
+            const labels = records.map(record => record.date);
+            const weights = records.map(record => record.weight);
+
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `${exercise} Max Weight Progress`,
+                        data: weights,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${exercise} Progress`,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Weight (lbs)'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const chartsContainer = document.getElementById('charts-container');
+        chartsContainer.innerHTML = '<div class="alert alert-danger">Error loading exercise data. Please try again later.</div>';
+    });
+</script>
+{% endblock %}

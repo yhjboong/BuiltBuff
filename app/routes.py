@@ -13,7 +13,7 @@ from app.utils.utils import (
     get_age_category,
     get_weight_class,
 )
-
+import logging
 
 
 routes = Blueprint('routes', __name__)
@@ -835,3 +835,62 @@ def debug_one_rm():
         for record in records
     ]
     return jsonify(records_dict), 200
+
+# advanced function #2, visualization of all workouts
+logger = logging.getLogger(__name__)
+
+@routes.route('/visualization')
+@login_required
+def visualization():
+    return render_template('visualization.html')
+
+@routes.route('/api/exercise_data')
+@login_required
+def exercise_data():
+    try:
+        # Get only workout logs with valid dates and weights
+        workout_data = db.session.query(
+            WorkoutLog.exercise_name,
+            WorkoutLog.completed_at,
+            func.max(WorkoutLog.weight).label('max_weight')
+        ).filter(
+            WorkoutLog.user_id == current_user.user_id,
+            WorkoutLog.weight.isnot(None),
+            WorkoutLog.completed_at.isnot(None)  # Filter out null dates
+        ).group_by(
+            WorkoutLog.exercise_name,
+            WorkoutLog.completed_at
+        ).order_by(
+            WorkoutLog.exercise_name,
+            WorkoutLog.completed_at
+        ).all()
+
+        # Format data for Chart.js
+        data = {}
+        for exercise, date, weight in workout_data:
+            if not date or not weight:  # Skip invalid entries
+                continue
+                
+            if exercise not in data:
+                data[exercise] = []
+            
+            try:
+                # Handle both Date and DateTime objects
+                if isinstance(date, datetime):
+                    formatted_date = date.strftime('%Y-%m-%d')
+                else:
+                    formatted_date = date.isoformat()
+                    
+                data[exercise].append({
+                    'date': formatted_date,
+                    'weight': float(weight)
+                })
+            except (AttributeError, ValueError) as e:
+                logger.error(f"Error processing date for {exercise}: {e}")
+                continue
+
+        return jsonify(data)
+
+    except Exception as e:
+        logger.error(f"Error in exercise_data: {str(e)}")
+        return jsonify({'error': 'An error occurred processing workout data'}), 500
