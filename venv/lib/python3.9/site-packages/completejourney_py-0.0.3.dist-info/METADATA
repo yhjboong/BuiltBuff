@@ -1,0 +1,27 @@
+Metadata-Version: 2.1
+Name: completejourney-py
+Version: 0.0.3
+Summary: Data from R package completejourney
+Home-page: UNKNOWN
+Author: James Cunningham
+Author-email: james@notbadafterall.com
+License: UNKNOWN
+Platform: UNKNOWN
+Requires-Python: >=3.6.0
+Description-Content-Type: text/markdown
+Requires-Dist: pandas (>=0.25.0)
+Requires-Dist: pyarrow (>=0.11.0)
+
+# The Complete Journey
+
+Longer description to be written. This is a Python equivalent of the R package [completejourney](https://github.com/bradleyboehmke/completejourney), using the more portable Parquet format (rather than R datasets).
+
+### Usage
+
+```python
+from completejourney_py import get_data
+
+transactions = get_data()["transactions"]
+```
+
+
